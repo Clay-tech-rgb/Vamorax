@@ -1,12 +1,12 @@
 // ===== FIREBASE CONFIGURATION =====
 // Replace these values with your actual Firebase project config
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  apiKey: "AIzaSyAodUP4ovThYhIqyYSWnhtpL_KrhB6pILo",
+  authDomain: "webbang-32962.firebaseapp.com",
+  projectId: "webbang-32962",
+  storageBucket: "webbang-32962.firebasestorage.app",
+  messagingSenderId: "721233682498",
+  appId: "1:721233682498:web:4f6148d2424f7fe9174ddb"
 };
 
 // Initialize Firebase
