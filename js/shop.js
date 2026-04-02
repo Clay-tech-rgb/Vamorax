@@ -73,8 +73,21 @@ export function renderPresetCard(preset) {
     : PLACEHOLDER_BG[idx];
 
   const actionBtn = preset.isFree
-    ? `<button class="btn btn-ghost btn-sm w-full" style="margin-top:12px;justify-content:center" onclick="window.downloadFree('${preset.id}')">Download</button>`
-    : `<button class="btn btn-primary btn-sm w-full" style="margin-top:12px;justify-content:center" onclick="window.addPresetToCart('${preset.id}')">Add to cart</button>`;
+    ? `<div style="display:flex;gap:6px;margin-top:12px">
+        ${preset.downloadUrl ? `<a href="${preset.downloadUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          File</a>` : ''}
+        ${preset.alightUrl ? `<a href="${preset.alightUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+          Alight</a>` : ''}
+        ${!preset.downloadUrl && !preset.alightUrl ? `<button class="btn btn-ghost btn-sm w-full" style="justify-content:center" onclick="window.downloadFree('${preset.id}')">Download</button>` : ''}
+       </div>`
+    : `<div style="display:flex;gap:6px;margin-top:12px">
+        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="window.addPresetToCart('${preset.id}')">Add to cart</button>
+        ${preset.alightUrl ? `<a href="${preset.alightUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:0 10px;justify-content:center" title="Alight Link">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+        </a>` : ''}
+       </div>`;
 
   return `
     <div class="preset-card" data-id="${preset.id}" data-category="${preset.category}">
