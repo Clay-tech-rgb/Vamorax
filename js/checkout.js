@@ -1,11 +1,12 @@
 // ===== CHECKOUT & PAYMENT =====
 import { getCart, getCartTotal, clearCart } from './cart.js';
-import { getCurrentUser } from './auth.js';
+import { auth, db, collection, addDoc, doc, updateDoc, getDoc, serverTimestamp } from './firebase-config.js';
 import { showToast } from './ui.js';
 
 export function initCheckoutPage() {
-  // Hard gate — must be logged in
-  const user = getCurrentUser();
+  // Use Firebase auth state
+  auth.onAuthStateChanged ? null : null; // ensure auth loaded
+  const user = auth.currentUser;
   if (!user) {
     localStorage.setItem('auth_redirect', 'checkout.html');
     window.location.href = 'login.html';
@@ -15,7 +16,6 @@ export function initCheckoutPage() {
   const cart = getCart();
   if (cart.length === 0) { window.location.href = 'shop.html'; return; }
 
-  // Pre-fill email from user account
   const emailInput = document.querySelector('[name="email"]');
   if (emailInput && user.email) emailInput.value = user.email;
 
@@ -28,11 +28,9 @@ export function initCheckoutPage() {
     const method = document.querySelector('.payment-method.selected')?.dataset.method;
     if (!method) { showToast('Please select a payment method', 'error'); return; }
 
-    // QRIS → go to dedicated QRIS payment page
     if (method === 'qris') {
       const total = getCartTotal();
-      const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
-      // Save pending order
+      const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
       const pendingOrder = {
         orderId, userId: user.uid,
         items: cart, totalPrice: total,
@@ -47,6 +45,7 @@ export function initCheckoutPage() {
     const btn = form.querySelector('button[type="submit"]');
     btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing...';
     await processPayment(method);
+    btn.disabled = false; btn.textContent = 'Pay now';
   });
 }
 
@@ -94,32 +93,44 @@ function generateQRIS() {
 }
 
 async function processPayment(method) {
-  const user = getCurrentUser();
+  const user = auth.currentUser;
   const cart = getCart();
   const total = getCartTotal();
-  const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2, 6).toUpperCase();
+  const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
 
-  // Simulate payment processing
-  await new Promise(r => setTimeout(r, 2000));
+  await new Promise(r => setTimeout(r, 1500));
 
   const order = {
     orderId, userId: user?.uid || 'guest',
-    items: cart, totalPrice: total,
+    items: cart.map(i => ({ id: i.id, name: i.name, price: i.price })),
+    totalPrice: total,
     paymentMethod: method, status: 'paid',
-    createdAt: new Date().toISOString()
+    createdAt: serverTimestamp()
   };
 
-  // Save to localStorage (replace with Firestore in production)
-  const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
-  orders.push(order);
-  localStorage.setItem('alight_orders', JSON.stringify(orders));
-  localStorage.setItem('alight_last_order', JSON.stringify(order));
+  try {
+    // Save order to Firestore
+    await addDoc(collection(db, 'orders'), order);
 
-  // Update user purchased presets
-  if (user) {
-    user.purchasedPresets = [...(user.purchasedPresets || []), ...cart.map(i => i.id)];
-    localStorage.setItem('alight_user', JSON.stringify(user));
+    // Update user's purchased presets in Firestore
+    if (user) {
+      const userRef = doc(db, 'users', user.uid);
+      const snap = await getDoc(userRef);
+      const existing = snap.exists() ? (snap.data().purchasedPresets || []) : [];
+      const newIds = [...new Set([...existing, ...cart.map(i => i.id)])];
+      await updateDoc(userRef, { purchasedPresets: newIds });
+    }
+  } catch(e) {
+    console.warn('Firestore save failed, using localStorage fallback:', e.message);
+    const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
+    orders.push({ ...order, createdAt: new Date().toISOString() });
+    localStorage.setItem('alight_orders', JSON.stringify(orders));
   }
+
+  // Always save last order locally for receipt page
+  localStorage.setItem('alight_last_order', JSON.stringify({
+    ...order, createdAt: new Date().toISOString()
+  }));
 
   clearCart();
   showToast('Payment successful! 🎉', 'success');

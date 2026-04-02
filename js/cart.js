@@ -1,15 +1,15 @@
 // ===== CART =====
 import { showToast, icons } from './ui.js';
+import { auth } from './firebase-config.js';
 
 const KEY = 'alight_cart';
 export const getCart = () => JSON.parse(localStorage.getItem(KEY) || '[]');
 const saveCart = (cart) => { localStorage.setItem(KEY, JSON.stringify(cart)); updateCartBadge(); };
 
 export function addToCart(preset) {
-  // Require login before adding to cart
-  const user = JSON.parse(localStorage.getItem('alight_user') || 'null');
+  const user = auth.currentUser;
   if (!user) {
-    import('./ui.js').then(({ showToast }) => showToast('Please sign in to add items to cart', 'info'));
+    showToast('Please sign in to add items to cart', 'info');
     localStorage.setItem('auth_redirect', window.location.href);
     setTimeout(() => { window.location.href = 'login.html'; }, 1200);
     return;
@@ -63,8 +63,8 @@ export function renderCartSidebar() {
     itemsEl.style.background = 'var(--border)';
     itemsEl.innerHTML = cart.map(item => `
       <div class="cart-item">
-        <div class="cart-item-thumb">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+        <div class="cart-item-thumb" style="${item.imageUrl ? `background:url('${item.imageUrl}') center/cover no-repeat;` : ''}">
+          ${!item.imageUrl ? `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="2"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>` : ''}
         </div>
         <div class="cart-item-info">
           <div class="cart-item-name">${item.name}</div>
@@ -104,7 +104,7 @@ export function initCartSidebar() {
   overlay?.addEventListener('click', close);
   checkoutBtn?.addEventListener('click', () => {
     if (getCart().length === 0) { showToast('Your cart is empty', 'error'); return; }
-    const user = JSON.parse(localStorage.getItem('alight_user') || 'null');
+    const user = auth.currentUser;
     if (!user) {
       showToast('Please sign in to checkout', 'info');
       localStorage.setItem('auth_redirect', 'checkout.html');

@@ -18,7 +18,7 @@
     <li><a href="tutorials.html" class="active">Tutorials</a></li><li><a href="contact.html">Contact</a></li>
   </ul>
   <div class="navbar-actions">
-    <a href="admin.html" class="icon-btn" title="Admin"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg></a>
+    
     <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
     <button class="icon-btn cart-btn"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="cart-badge">0</span></button>
     <a href="login.html" class="btn btn-primary btn-sm nav-login-btn">Sign in</a>
@@ -90,86 +90,7 @@
     </div>
 
     <div class="tutorial-grid" id="tutGrid">
-      <div class="tutorial-card" data-category="install">
-        <div class="tutorial-cat">Install</div>
-        <h3 class="tutorial-title">How to install presets</h3>
-        <p class="tutorial-desc">Import preset ZIP files into Alight Motion on Android and iOS.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">01</span><span>Download the ZIP from your dashboard</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">02</span><span>Extract to get the .aep or .preset file</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">03</span><span>Open Alight Motion → Projects → Import</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">04</span><span>Select the file and tap Import</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">05</span><span>Find it in your presets library</span></div>
-        </div>
-      </div>
-
-      <div class="tutorial-card" data-category="create">
-        <div class="tutorial-cat">Create</div>
-        <h3 class="tutorial-title">How to create presets</h3>
-        <p class="tutorial-desc">Build custom presets from scratch and export as ZIP.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">01</span><span>Create a new project in Alight Motion</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">02</span><span>Add effects, keyframes, and animations</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">03</span><span>Select all layers → Long press → Save as Preset</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">04</span><span>Name your preset and add a thumbnail</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">05</span><span>Export as ZIP to share</span></div>
-        </div>
-      </div>
-
-      <div class="tutorial-card" data-category="effects">
-        <div class="tutorial-cat">Effects</div>
-        <h3 class="tutorial-title">How to use effects</h3>
-        <p class="tutorial-desc">Master blur, glow, color grading, and transitions.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">Blur</span><span>Add → Effects → Blur. Keyframe intensity for smooth transitions</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Glow</span><span>Effects → Glow. Adjust radius and intensity</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Color</span><span>Effects → Color Correction → Curves</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Cut</span><span>Use opacity + scale keyframes for smooth transitions</span></div>
-        </div>
-      </div>
-
-      <div class="tutorial-card" data-category="curve">
-        <div class="tutorial-cat">Curve Editor</div>
-        <h3 class="tutorial-title">Curve / graph editor</h3>
-        <p class="tutorial-desc">Master easing and smooth motion for professional animations.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">In</span><span>Ease In — slow start, fast end. Drag first handle down</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Out</span><span>Ease Out — fast start, slow end. Drag last handle up</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">S</span><span>S-curve for natural motion — both handles curved</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Tip</span><span>Copy curve values between properties for consistency</span></div>
-        </div>
-      </div>
-
-      <div class="tutorial-card" data-category="advanced">
-        <div class="tutorial-cat">Advanced</div>
-        <h3 class="tutorial-title">Beat sync editing</h3>
-        <p class="tutorial-desc">Sync cuts and effects to music beats for viral content.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">01</span><span>Import audio track to the timeline</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">02</span><span>Enable waveform view to see beat markers</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">03</span><span>Place keyframes exactly on beat peaks</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">04</span><span>Use scale/rotation snaps on each beat</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">05</span><span>Add flash/glow effects on the downbeats</span></div>
-        </div>
-      </div>
-
-      <div class="tutorial-card" data-category="advanced">
-        <div class="tutorial-cat">Advanced</div>
-        <h3 class="tutorial-title">Velocity editing</h3>
-        <p class="tutorial-desc">Create smooth speed ramps and velocity edits.</p>
-        <div class="tutorial-video"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg></div>
-        <div class="tutorial-steps">
-          <div class="tutorial-step"><span class="tutorial-step-num">Ramp</span><span>Use time remapping to slow down or speed up clips</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Blur</span><span>Add radial blur during fast sections</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Motion</span><span>Enable motion blur for realistic movement</span></div>
-          <div class="tutorial-step"><span class="tutorial-step-num">Cut</span><span>Use scale + opacity for smooth velocity cuts</span></div>
-        </div>
-      </div>
+      <div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);font-size:13px">Loading tutorials...</div>
     </div>
   </div>
 </section>
@@ -186,18 +107,57 @@
   import { initNavPill } from './js/navbar.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
+  import { db, collection, getDocs, query, orderBy } from './js/firebase-config.js';
+
   window.toggleTheme = toggleTheme;
   initPageTransition();
   startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill();
   initWaveBackground();
   setTimeout(() => document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible')), 80);
 
-  // Shared filter function
-  function applyFilter(f) {
-    document.querySelectorAll('#tutGrid .tutorial-card').forEach(c => {
-      c.style.display = (f === 'all' || c.dataset.category === f) ? '' : 'none';
-    });
+  let allTutorials = [];
+
+  // Load tutorials from Firestore
+  async function loadTutorials() {
+    const grid = document.getElementById('tutGrid');
+    try {
+      const snap = await getDocs(collection(db, 'tutorials'));
+      allTutorials = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    } catch(e) {
+      console.warn('Could not load tutorials:', e.message);
+    }
+    renderTutorials('all');
   }
+
+  function renderTutorials(filter) {
+    const grid = document.getElementById('tutGrid');
+    const list = filter === 'all' ? allTutorials : allTutorials.filter(t => t.category === filter);
+    if (!list.length) {
+      grid.innerHTML = `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);font-size:13px">No tutorials yet.</div>`;
+      return;
+    }
+    grid.innerHTML = list.map(t => `
+      <div class="tutorial-card" data-category="${t.category||''}">
+        <div class="tutorial-cat">${(t.category||'').replace('-',' ')}</div>
+        <h3 class="tutorial-title">${t.title||''}</h3>
+        <p class="tutorial-desc">${t.description||''}</p>
+        ${t.videoUrl ? `
+          <a href="${t.videoUrl}" target="_blank" rel="noopener" class="tutorial-video" style="text-decoration:none">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          </a>` : `
+          <div class="tutorial-video">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          </div>`}
+        ${t.steps?.length ? `<div class="tutorial-steps">${t.steps.map((s,i) => `
+          <div class="tutorial-step"><span class="tutorial-step-num">${String(i+1).padStart(2,'0')}</span><span>${s}</span></div>`).join('')}
+        </div>` : ''}
+      </div>`).join('');
+  }
+
+  loadTutorials();
+
+  // Shared filter
+  function applyFilter(f) { renderTutorials(f); }
 
   // Desktop tabs
   document.querySelectorAll('#tutFilter .filter-tab').forEach(tab => {
@@ -236,6 +196,7 @@
 </script>
 </body>
 </html>
+
 
 
 

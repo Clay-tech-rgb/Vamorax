@@ -80,7 +80,7 @@ export function renderPresetCard(preset) {
     <div class="preset-card" data-id="${preset.id}" data-category="${preset.category}">
       <div class="preset-card-media" style="background:${bg}">
         ${!preset.imageUrl ? `<div class="preset-card-thumb-label">${preset.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>` : ''}
-        <span class="preset-badge ${preset.isFree ? 'badge-free' : 'badge-paid'}">${preset.isFree ? 'Free' : 'Rp 5K'}</span>
+        <span class="preset-badge ${preset.isFree ? 'badge-free' : 'badge-paid'}">${preset.isFree ? 'Free' : 'Rp ' + Number(preset.price).toLocaleString('id-ID')}</span>
         <button class="wishlist-btn" data-id="${preset.id}">${icons.heart}</button>
       </div>
       <div class="preset-card-body">
