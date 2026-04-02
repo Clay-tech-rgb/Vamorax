@@ -130,12 +130,9 @@ export function initLoginPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: email.split('@')[0] });
       await saveUserToFirestore(cred.user);
-      // Send verification email to prevent spam
-      try {
-        await sendEmailVerification(cred.user);
-      } catch {}
+      try { await sendEmailVerification(cred.user); } catch {}
       showToast('Account created! Please verify your email.', 'success');
-      setTimeout(() => window.location.href = 'verify-email.html', 900);
+      window.location.href = 'verify-email.html';
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
         ? 'Email already registered. Try signing in.'
