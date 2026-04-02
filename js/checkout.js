@@ -1,51 +1,51 @@
 // ===== CHECKOUT & PAYMENT =====
 import { getCart, getCartTotal, clearCart } from './cart.js';
-import { auth, db, collection, addDoc, doc, updateDoc, getDoc, serverTimestamp } from './firebase-config.js';
+import { auth, db, collection, addDoc, doc, updateDoc, getDoc, serverTimestamp, onAuthStateChanged } from './firebase-config.js';
 import { showToast } from './ui.js';
 
 export function initCheckoutPage() {
-  // Use Firebase auth state
-  auth.onAuthStateChanged ? null : null; // ensure auth loaded
-  const user = auth.currentUser;
-  if (!user) {
-    localStorage.setItem('auth_redirect', 'checkout.html');
-    window.location.href = 'login.html';
-    return;
-  }
-
   const cart = getCart();
   if (cart.length === 0) { window.location.href = 'shop.html'; return; }
 
-  const emailInput = document.querySelector('[name="email"]');
-  if (emailInput && user.email) emailInput.value = user.email;
-
-  renderOrderSummary();
-  initPaymentMethods();
-
-  const form = document.querySelector('#checkout-form');
-  form?.addEventListener('submit', async e => {
-    e.preventDefault();
-    const method = document.querySelector('.payment-method.selected')?.dataset.method;
-    if (!method) { showToast('Please select a payment method', 'error'); return; }
-
-    if (method === 'qris') {
-      const total = getCartTotal();
-      const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
-      const pendingOrder = {
-        orderId, userId: user.uid,
-        items: cart, totalPrice: total,
-        paymentMethod: 'qris', status: 'pending',
-        createdAt: new Date().toISOString()
-      };
-      localStorage.setItem('alight_pending_order', JSON.stringify(pendingOrder));
-      window.location.href = 'payment-qris.html';
+  // Wait for Firebase auth to restore session before checking
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      localStorage.setItem('auth_redirect', 'checkout.html');
+      window.location.href = 'login.html';
       return;
     }
 
-    const btn = form.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing...';
-    await processPayment(method);
-    btn.disabled = false; btn.textContent = 'Pay now';
+    const emailInput = document.querySelector('[name="email"]');
+    if (emailInput && user.email) emailInput.value = user.email;
+
+    renderOrderSummary();
+    initPaymentMethods();
+
+    const form = document.querySelector('#checkout-form');
+    form?.addEventListener('submit', async e => {
+      e.preventDefault();
+      const method = document.querySelector('.payment-method.selected')?.dataset.method;
+      if (!method) { showToast('Please select a payment method', 'error'); return; }
+
+      if (method === 'qris') {
+        const total = getCartTotal();
+        const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
+        const pendingOrder = {
+          orderId, userId: user.uid,
+          items: cart, totalPrice: total,
+          paymentMethod: 'qris', status: 'pending',
+          createdAt: new Date().toISOString()
+        };
+        localStorage.setItem('alight_pending_order', JSON.stringify(pendingOrder));
+        window.location.href = 'payment-qris.html';
+        return;
+      }
+
+      const btn = form.querySelector('button[type="submit"]');
+      btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Processing...';
+      await processPayment(method, user);
+      btn.disabled = false; btn.textContent = 'Pay now';
+    });
   });
 }
 
@@ -92,8 +92,7 @@ function generateQRIS() {
   `;
 }
 
-async function processPayment(method) {
-  const user = auth.currentUser;
+async function processPayment(method, user) {
   const cart = getCart();
   const total = getCartTotal();
   const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
