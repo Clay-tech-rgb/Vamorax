@@ -93,47 +93,42 @@ function generateQRIS() {
 }
 
 async function processPayment(method, user) {
-  const cart = getCart();
+  const cart  = getCart();
   const total = getCartTotal();
   const orderId = 'ORD-' + Date.now() + '-' + Math.random().toString(36).substr(2,6).toUpperCase();
 
+  // Simulate payment (replace with real gateway later)
   await new Promise(r => setTimeout(r, 1500));
+  await saveOrder(orderId, user, cart, total, method, 'paid');
+  clearCart();
+  showToast('Payment successful! 🎉', 'success');
+  setTimeout(() => window.location.href = 'receipt.html', 1500);
+}
 
+async function saveOrder(orderId, user, cart, total, method, status) {
   const order = {
-    orderId, userId: user?.uid || 'guest',
-    items: cart.map(i => ({ id: i.id, name: i.name, price: i.price })),
+    orderId,
+    userId: user?.uid || 'guest',
+    items:  cart.map(i => ({ id: i.id, name: i.name, price: i.price, downloadUrl: i.downloadUrl || '', alightUrl: i.alightUrl || '' })),
     totalPrice: total,
-    paymentMethod: method, status: 'paid',
-    createdAt: serverTimestamp()
+    paymentMethod: method,
+    status,
+    createdAt: serverTimestamp(),
   };
-
   try {
-    // Save order to Firestore
     await addDoc(collection(db, 'orders'), order);
-
-    // Update user's purchased presets in Firestore
     if (user) {
       const userRef = doc(db, 'users', user.uid);
       const snap = await getDoc(userRef);
       const existing = snap.exists() ? (snap.data().purchasedPresets || []) : [];
-      const newIds = [...new Set([...existing, ...cart.map(i => i.id)])];
-      await updateDoc(userRef, { purchasedPresets: newIds });
+      await updateDoc(userRef, { purchasedPresets: [...new Set([...existing, ...cart.map(i => i.id)])] });
     }
   } catch(e) {
-    console.warn('Firestore save failed, using localStorage fallback:', e.message);
-    const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
-    orders.push({ ...order, createdAt: new Date().toISOString() });
-    localStorage.setItem('alight_orders', JSON.stringify(orders));
+    console.warn('Firestore save failed:', e.message);
   }
-
-  // Always save last order locally for receipt page
   localStorage.setItem('alight_last_order', JSON.stringify({
     ...order, createdAt: new Date().toISOString()
   }));
-
-  clearCart();
-  showToast('Payment successful! 🎉', 'success');
-  setTimeout(() => window.location.href = 'receipt.html', 1500);
 }
 
 export function initReceiptPage() {

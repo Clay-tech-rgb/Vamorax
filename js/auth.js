@@ -3,7 +3,7 @@ import { showToast, showConfirm } from './ui.js';
 import {
   auth, db, GoogleAuthProvider, signInWithPopup,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
-  onAuthStateChanged, signOut, updateProfile,
+  onAuthStateChanged, signOut, updateProfile, sendEmailVerification,
   doc, setDoc, getDoc, updateDoc
 } from './firebase-config.js';
 
@@ -88,6 +88,12 @@ export function initLoginPage() {
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
     try {
       await signInWithEmailAndPassword(auth, email, password);
+      // Check email verification
+      if (!auth.currentUser?.emailVerified) {
+        showToast('Please verify your email first.', 'error');
+        setTimeout(() => window.location.href = 'verify-email.html', 1000);
+        return;
+      }
       showToast('Welcome back!', 'success');
       const redirect = localStorage.getItem('auth_redirect') || 'dashboard.html';
       localStorage.removeItem('auth_redirect');
@@ -124,8 +130,12 @@ export function initLoginPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: email.split('@')[0] });
       await saveUserToFirestore(cred.user);
-      showToast('Account created! Welcome 🎉', 'success');
-      setTimeout(() => window.location.href = 'dashboard.html', 900);
+      // Send verification email to prevent spam
+      try {
+        await sendEmailVerification(cred.user);
+      } catch {}
+      showToast('Account created! Please verify your email.', 'success');
+      setTimeout(() => window.location.href = 'verify-email.html', 900);
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
         ? 'Email already registered. Try signing in.'

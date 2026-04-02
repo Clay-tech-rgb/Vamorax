@@ -61,6 +61,9 @@
           <div class="form-group" style="margin-bottom:20px">
             <label class="form-label">Password</label>
             <input class="form-input" type="password" name="password" placeholder="Password" required />
+            <div style="text-align:right;margin-top:6px">
+              <a href="forgot-password.html" style="font-size:12px;color:var(--text-3);transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-3)'">Forgot password?</a>
+            </div>
           </div>
           <button type="submit" class="btn btn-primary w-full" style="justify-content:center">Sign in</button>
         </form>
@@ -98,7 +101,7 @@
   import { initLoginPage, isLoggedIn, signInWithGoogle } from './js/auth.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
-  import { auth, onAuthStateChanged } from './js/firebase-config.js';
+  import { auth, onAuthStateChanged, sendPasswordResetEmail } from './js/firebase-config.js';
 
   initPageTransition();
   initWaveBackground();
@@ -113,6 +116,26 @@
 
   initLoginPage();
   doneProgress();
+
+  // Forgot password
+  document.getElementById('forgotBtn')?.addEventListener('click', async () => {
+    const emailInput = document.querySelector('#email-login-form [name="email"]');
+    const email = emailInput?.value.trim();
+    if (!email) {
+      showToast('Enter your email first', 'error');
+      emailInput?.focus();
+      return;
+    }
+    try {
+      await sendPasswordResetEmail(auth, email);
+      showToast('Reset link sent to ' + email, 'success');
+    } catch (err) {
+      const msg = err.code === 'auth/user-not-found'
+        ? 'No account found with this email.'
+        : 'Failed to send reset email.';
+      showToast(msg, 'error');
+    }
+  });
 
   // Google sign in button
   window.handleSocialLogin = async (provider) => {
