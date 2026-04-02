@@ -111,6 +111,7 @@
   import { initTheme, toggleTheme, startProgress, doneProgress, showToast } from './js/ui.js';
   import { initDashboard } from './js/auth.js';
   import { fetchPresets, renderPresetCard } from './js/shop.js';
+  import { auth, db, doc, getDoc } from './js/firebase-config.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
   window.toggleTheme = toggleTheme;
@@ -127,36 +128,50 @@
     });
   });
 
-  const user   = JSON.parse(localStorage.getItem('alight_user') || 'null');
-  const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
   const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+  const orders   = JSON.parse(localStorage.getItem('alight_orders') || '[]');
 
-  if (user) {
-    const purchased = user.purchasedPresets || [];
-    document.getElementById('stat-purchased').textContent = purchased.length;
-    document.getElementById('stat-free').textContent = (user.downloadedFreePresets || []).length;
-    document.getElementById('stat-orders').textContent = orders.length;
-
+  // Use Firebase auth current user
+  const fbUser = auth.currentUser;
+  if (fbUser) {
     // Load presets async
     fetchPresets().then(PRESETS => {
-      if (purchased.length > 0) {
-        const grid = document.getElementById('purchased-grid');
-        const items = PRESETS.filter(p => purchased.includes(p.id));
-        grid.innerHTML = items.length ? items.map(p => `
-          <div class="preset-card" style="background:var(--bg-2)">
-            <div class="preset-card-media"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></div>
-            <div class="preset-card-body">
-              <div class="preset-card-cat">${p.category}</div>
-              <div class="preset-card-name">${p.name}</div>
-              <button class="btn btn-primary btn-sm w-full" style="margin-top:12px;justify-content:center">Download ZIP</button>
-            </div>
-          </div>`).join('')
-          : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);font-size:13px">No purchased presets yet.</div>`;
-      }
+      // Stat counts from Firestore user doc
+      getDoc(doc(db, 'users', fbUser.uid)).then(snap => {
+        const userData = snap.exists() ? snap.data() : {};
+        const purchased = userData.purchasedPresets || [];
+        document.getElementById('stat-purchased').textContent = purchased.length;
+        document.getElementById('stat-free').textContent = (userData.downloadedFreePresets || []).length;
+        document.getElementById('stat-orders').textContent = orders.length;
 
+        if (purchased.length > 0) {
+          const grid = document.getElementById('purchased-grid');
+          const items = PRESETS.filter(p => purchased.includes(p.id));
+          grid.innerHTML = items.length ? items.map(p => `
+            <div class="preset-card" style="background:var(--bg-2)">
+              <div class="preset-card-media" style="background:${p.imageUrl ? `url('${p.imageUrl}') center/cover` : 'linear-gradient(135deg,#1a1a20,#111116)'}">
+                ${!p.imageUrl ? `<div class="preset-card-thumb-label">${p.name.split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</div>` : ''}
+              </div>
+              <div class="preset-card-body">
+                <div class="preset-card-cat">${p.category||''}</div>
+                <div class="preset-card-name">${p.name}</div>
+                <div style="display:flex;gap:6px;margin-top:12px">
+                  ${p.downloadUrl ? `<a href="${p.downloadUrl}" target="_blank" class="btn btn-primary btn-sm" style="flex:1;justify-content:center">Download</a>` : ''}
+                  ${p.alightUrl ? `<a href="${p.alightUrl}" target="_blank" class="btn btn-ghost btn-sm" style="flex:1;justify-content:center">Alight</a>` : ''}
+                </div>
+              </div>
+            </div>`).join('')
+            : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);font-size:13px">No purchased presets yet.</div>`;
+        }
+      });
+
+      // Wishlist from localStorage
       if (wishlist.length > 0) {
         const items = PRESETS.filter(p => wishlist.includes(p.id));
-        if (items.length) document.getElementById('wishlist-grid').innerHTML = items.map(p => renderPresetCard(p)).join('');
+        const wGrid = document.getElementById('wishlist-grid');
+        if (items.length && wGrid) {
+          wGrid.innerHTML = items.map(p => renderPresetCard(p)).join('');
+        }
       }
     });
 
@@ -165,7 +180,7 @@
         <div style="display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--border);flex-wrap:wrap;gap:8px">
           <div>
             <div style="font-family:monospace;font-size:11px;color:var(--text-3)">${o.orderId}</div>
-            <div style="font-size:13px;font-weight:500;margin-top:2px">${o.items.length} preset${o.items.length !== 1 ? 's' : ''}</div>
+            <div style="font-size:13px;font-weight:500;margin-top:2px">${(o.items||[]).length} preset${(o.items||[]).length !== 1 ? 's' : ''}</div>
             <div style="font-size:11px;color:var(--text-3);margin-top:2px">${new Date(o.createdAt).toLocaleDateString('id-ID')}</div>
           </div>
           <div style="text-align:right">

@@ -127,9 +127,11 @@ export async function initShopPage() {
   const presets = await fetchPresets();
 
   const renderGrid = (filter = 'all') => {
-    const filtered = filter === 'all' ? presets
-      : filter === 'free' ? presets.filter(p => p.isFree)
-      : presets.filter(p => p.category === filter);
+    // Shop only shows paid presets — free presets have their own page
+    const paid = presets.filter(p => !p.isFree);
+    const filtered = filter === 'all'
+      ? paid
+      : paid.filter(p => p.category === filter);
     grid.innerHTML = filtered.length
       ? filtered.map(p => renderPresetCard(p)).join('')
       : `<div style="grid-column:1/-1;padding:60px;text-align:center;color:var(--text-3);font-size:13px">No presets found</div>`;
