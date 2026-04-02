@@ -111,7 +111,7 @@
   import { initTheme, toggleTheme, startProgress, doneProgress, showToast } from './js/ui.js';
   import { initDashboard } from './js/auth.js';
   import { fetchPresets, renderPresetCard } from './js/shop.js';
-  import { auth, db, doc, getDoc } from './js/firebase-config.js';
+  import { auth, db, doc, getDoc, onAuthStateChanged } from './js/firebase-config.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
   window.toggleTheme = toggleTheme;
@@ -131,9 +131,9 @@
   const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
   const orders   = JSON.parse(localStorage.getItem('alight_orders') || '[]');
 
-  // Use Firebase auth current user
-  const fbUser = auth.currentUser;
-  if (fbUser) {
+  // Wait for Firebase auth to restore session
+  onAuthStateChanged(auth, async (fbUser) => {
+    if (!fbUser) { window.location.href = 'login.html'; return; }
     // Load presets async
     fetchPresets().then(PRESETS => {
       // Stat counts from Firestore user doc
@@ -189,7 +189,7 @@
           </div>
         </div>`).join('');
     }
-  }
+  }); // end onAuthStateChanged
 
   window.addPresetToCart = () => {};
   window.downloadFree = () => {};
@@ -199,19 +199,27 @@
   const settingsEmail = document.getElementById('settings-email');
   const settingsSave  = document.getElementById('settings-save');
 
-  if (user && settingsName) {
-    settingsName.value  = user.displayName || user.email?.split('@')[0] || '';
-    settingsEmail.value = user.email || '';
+  if (settingsName && settingsEmail) {
+    const fbUser = auth.currentUser;
+    if (fbUser) {
+      settingsName.value  = fbUser.displayName || fbUser.email?.split('@')[0] || '';
+      settingsEmail.value = fbUser.email || '';
+    }
   }
 
-  settingsSave?.addEventListener('click', () => {
-    const u = JSON.parse(localStorage.getItem('alight_user') || 'null');
-    if (!u) return;
-    u.displayName = settingsName.value.trim() || u.displayName;
-    localStorage.setItem('alight_user', JSON.stringify(u));
-    // Update sidebar display
-    document.querySelector('.dashboard-user-name').textContent = u.displayName || u.email?.split('@')[0];
-    showToast('Settings saved', 'success');
+  settingsSave?.addEventListener('click', async () => {
+    const fbUser = auth.currentUser;
+    if (!fbUser) return;
+    const newName = settingsName?.value.trim();
+    if (!newName) return;
+    try {
+      const { updateProfile } = await import('./js/firebase-config.js');
+      await updateProfile(fbUser, { displayName: newName });
+      document.querySelector('.dashboard-user-name').textContent = newName;
+      showToast('Settings saved', 'success');
+    } catch {
+      showToast('Failed to save', 'error');
+    }
   });
 </script>
 </body>

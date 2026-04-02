@@ -83,10 +83,7 @@ export function renderPresetCard(preset) {
         ${!preset.downloadUrl && !preset.alightUrl ? `<button class="btn btn-ghost btn-sm w-full" style="justify-content:center" onclick="window.downloadFree('${preset.id}')">Download</button>` : ''}
        </div>`
     : `<div style="display:flex;gap:6px;margin-top:12px">
-        <button class="btn btn-primary btn-sm" style="flex:1;justify-content:center" onclick="window.addPresetToCart('${preset.id}')">Add to cart</button>
-        ${preset.alightUrl ? `<a href="${preset.alightUrl}" target="_blank" class="btn btn-ghost btn-sm" style="padding:0 10px;justify-content:center" title="Alight Link">
-          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
-        </a>` : ''}
+        <button class="btn btn-primary btn-sm w-full" style="justify-content:center" onclick="window.addPresetToCart('${preset.id}')">Add to cart</button>
        </div>`;
 
   return `
