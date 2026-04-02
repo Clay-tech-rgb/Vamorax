@@ -99,18 +99,33 @@
 
 <script type="module">
   import { initTheme, startProgress, doneProgress, showToast, initSmoothScroll } from './js/ui.js';
-  import { initLoginPage, isLoggedIn } from './js/auth.js';
+  import { initLoginPage, isLoggedIn, signInWithGoogle } from './js/auth.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
+  import { auth, onAuthStateChanged } from './js/firebase-config.js';
 
   initPageTransition();
   initWaveBackground();
   startProgress();
   initTheme();
   initSmoothScroll();
-  if (isLoggedIn()) { window.location.href = 'dashboard.html'; }
+
+  // Redirect if already logged in
+  onAuthStateChanged(auth, user => {
+    if (user) window.location.href = 'dashboard.html';
+  });
+
   initLoginPage();
   doneProgress();
+
+  // Google sign in button
+  window.handleSocialLogin = async (provider) => {
+    if (provider === 'google') {
+      await signInWithGoogle();
+    } else {
+      showToast(`${provider} login coming soon`, 'info');
+    }
+  };
 
   // Tab switching with slide animation
   const tabs = document.querySelectorAll('.auth-tab');
@@ -165,10 +180,6 @@
     if (pw !== confirm) { e.preventDefault(); showToast('Passwords do not match', 'error'); return; }
     if (!document.getElementById('captcha').checked) { e.preventDefault(); showToast('Please verify you are not a robot', 'error'); return; }
   });
-
-  window.handleSocialLogin = (provider) => {
-    showToast(`Redirecting to ${provider.charAt(0).toUpperCase() + provider.slice(1)}...`, 'info');
-  };
 </script>
 </body>
 </html>
