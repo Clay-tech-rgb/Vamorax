@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <link rel="icon" type="image/png" href="logo Vm.png" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+<div class="auth-bg">
+  <div class="auth-orb auth-orb-1"></div>
+  <div class="auth-orb auth-orb-2"></div>
+  <div class="auth-orb auth-orb-3"></div>
+</div>
+<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
+  <span class="spinner" style="width:32px;height:32px;border-width:3px"></span>
+  <p style="font-size:13px;color:var(--text-2);font-family:var(--font)">Processing...</p>
+</div>
+
+<script>
+  // Read theme
+  const t = localStorage.getItem('theme') || 'dark';
+  document.documentElement.setAttribute('data-theme', t);
+
+  // Parse Firebase action params
+  const p       = new URLSearchParams(window.location.search);
+  const mode    = p.get('mode');
+  const oobCode = p.get('oobCode');
+  const lang    = p.get('lang') || 'en';
+
+  if (mode === 'verifyEmail' && oobCode) {
+    window.location.replace('/verify-email?mode=verifyEmail&oobCode=' + oobCode + '&lang=' + lang);
+  } else if (mode === 'resetPassword' && oobCode) {
+    window.location.replace('/reset-password?mode=resetPassword&oobCode=' + oobCode + '&lang=' + lang);
+  } else if (mode === 'recoverEmail' && oobCode) {
+    // Email recovery — just go to login with a message
+    window.location.replace('/login?recovered=1');
+  } else {
+    // Unknown mode — go home
+    window.location.replace('/');
+  }
+</script>
+</body>
+</html>

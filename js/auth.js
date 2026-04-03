@@ -1,5 +1,6 @@
 // ===== AUTHENTICATION — Firebase Auth =====
 import { showToast, showConfirm } from './ui.js';
+import { verifyRecaptcha, addHoneypot, isBot, clientRateLimit, disableConsoleInProd } from './security.js';
 import {
   auth, db, GoogleAuthProvider, signInWithPopup,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -84,6 +85,15 @@ export function initLoginPage() {
     const email    = emailForm.querySelector('[name="email"]').value.trim();
     const password = emailForm.querySelector('[name="password"]').value;
     const btn      = emailForm.querySelector('button[type="submit"]');
+
+    // Honeypot check
+    if (isBot(emailForm)) return;
+
+    // Client-side rate limit: 5 attempts per minute
+    if (!clientRateLimit('login', 5, 60_000)) {
+      showToast('Too many attempts. Wait a minute.', 'error'); return;
+    }
+
     btn.disabled = true;
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
     try {
@@ -95,7 +105,10 @@ export function initLoginPage() {
         return;
       }
       showToast('Welcome back!', 'success');
-      const redirect = localStorage.getItem('auth_redirect') || 'dashboard.html';
+      const raw = localStorage.getItem('auth_redirect') || '';
+      // Only redirect to same-origin pages, default to dashboard
+      const redirect = raw && raw.startsWith(window.location.origin) && !raw.includes('login') && !raw.includes('register')
+        ? raw : 'dashboard.html';
       localStorage.removeItem('auth_redirect');
       setTimeout(() => window.location.href = redirect, 900);
     } catch (err) {
@@ -122,6 +135,14 @@ export function initLoginPage() {
 
     if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
     if (captcha && !captcha.checked) { showToast('Please verify you are not a robot', 'error'); return; }
+
+    // Honeypot check
+    if (isBot(registerForm)) return;
+
+    // Client-side rate limit
+    if (!clientRateLimit('register', 3, 300_000)) {
+      showToast('Too many registrations. Try again later.', 'error'); return;
+    }
 
     const btn = registerForm.querySelector('button[type="submit"]');
     btn.disabled = true;
@@ -153,7 +174,9 @@ export async function signInWithGoogle() {
     const cred = await signInWithPopup(auth, provider);
     await saveUserToFirestore(cred.user);
     showToast(`Welcome, ${cred.user.displayName || 'there'}!`, 'success');
-    const redirect = localStorage.getItem('auth_redirect') || 'dashboard.html';
+    const raw2 = localStorage.getItem('auth_redirect') || '';
+    const redirect = raw2 && raw2.startsWith(window.location.origin) && !raw2.includes('login')
+      ? raw2 : 'dashboard.html';
     localStorage.removeItem('auth_redirect');
     setTimeout(() => window.location.href = redirect, 900);
   } catch (err) {

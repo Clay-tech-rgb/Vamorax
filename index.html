@@ -311,6 +311,8 @@
   import { initNavPill } from './js/navbar.js';
   import { initPageTransition } from './js/transition.js';
   import { initCharReveal } from './js/animations.js';
+  import { disableConsoleInProd } from './js/security.js';
+  disableConsoleInProd();
 
   window.toggleTheme = toggleTheme;
   initPageTransition();

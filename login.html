@@ -102,9 +102,12 @@
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
   import { auth, onAuthStateChanged, sendPasswordResetEmail } from './js/firebase-config.js';
+  import { loadRecaptcha, addHoneypot, disableConsoleInProd } from './js/security.js';
 
   initPageTransition();
   initWaveBackground();
+  loadRecaptcha();
+  disableConsoleInProd();
   startProgress();
   initTheme();
   initSmoothScroll();
@@ -115,6 +118,8 @@
   });
 
   initLoginPage();
+  // Add honeypot to both forms
+  document.querySelectorAll('form').forEach(f => addHoneypot(f));
   doneProgress();
 
   // Forgot password
