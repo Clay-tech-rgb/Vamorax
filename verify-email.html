@@ -1,91 +1,129 @@
 <!DOCTYPE html>
-<html lang="id">
+<html lang="en" data-theme="dark">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Verifikasi Email | Vamorax</title>
-    <link rel="stylesheet" href="css/style.css"> 
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Verifikasi Email | Vamorax</title>
+  <link rel="stylesheet" href="css/main.css" />
+  <style>
+    /* Styling Tambahan */
+    .auth-container { height: 100vh; display: flex; align-items: center; justify-content: center; padding: 20px; }
+    .auth-card { 
+      background: rgba(30, 30, 30, 0.8); backdrop-filter: blur(10px); 
+      padding: 32px; border-radius: 16px; border: 1px solid rgba(255,255,255,0.1);
+      width: 100%; max-width: 400px; text-align: center;
+    }
+    .status-icon { font-size: 3rem; margin-bottom: 1rem; }
+    .input-resend { 
+      width: 100%; padding: 12px; margin: 15px 0; border-radius: 8px; 
+      background: rgba(0,0,0,0.3); border: 1px solid #444; color: white;
+    }
+    .btn-resend { 
+      width: 100%; padding: 12px; border-radius: 8px; background: #007bff; 
+      color: white; border: none; cursor: pointer; font-weight: 600;
+    }
+    .hidden { display: none; }
+  </style>
 </head>
-<body class="auth-page">
-    <div id="progress-bar"></div> <div class="container">
-        <div class="auth-card">
-            <div id="status-icon" style="font-size: 3rem; margin-bottom: 1rem;">⏳</div>
-            <h2 id="status-title">Memverifikasi...</h2>
-            <p id="status-text" class="info-text">Mohon tunggu sebentar, sistem sedang memvalidasi akun lu.</p>
+<body>
+  <div class="auth-bg">
+    <div class="auth-orb auth-orb-1"></div>
+    <div class="auth-orb auth-orb-2"></div>
+  </div>
 
-            <div class="auth-footer" id="footer-action" style="display: none;">
-                <a href="login.html" class="btn-primary" style="text-decoration: none; display: inline-block; padding: 10px 20px;">Kembali ke Login</a>
-            </div>
-        </div>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div id="status-icon" class="status-icon">⏳</div>
+      <h2 id="status-title">Memverifikasi...</h2>
+      <p id="status-text" style="color: #aaa; font-size: 14px; margin-bottom: 20px;">
+        Sabar ya, sistem lagi nge-cek link verifikasi lu.
+      </p>
+
+      <div id="resend-section" class="hidden">
+        <p style="font-size: 13px; color: #888;">Gak dapet email atau link basi? Masukin email lu buat kirim ulang:</p>
+        <input type="email" id="resend-email" class="input-resend" placeholder="Email lu@gmail.com">
+        <button id="btn-resend-action" class="btn-resend">Kirim Ulang Link</button>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <a href="login.html" style="color: #007bff; text-decoration: none; font-size: 13px;">Kembali ke Login</a>
+      </div>
     </div>
+  </div>
 
-    <div id="toast-container"></div>
+  <script type="module">
+    import { auth } from './js/firebase-config.js';
+    import { applyActionCode, sendEmailVerification, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+    import { initTheme, showToast, startProgress, doneProgress } from './js/ui.js';
 
-    <script type="module">
-        import { initTheme, startProgress, doneProgress, showToast } from './js/ui.js';
-        import { auth } from './js/firebase-config.js';
-        import { applyActionCode } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-        import { initPageTransition } from './js/transition.js';
+    initTheme();
 
-        // Inisialisasi Tema & Transisi
-        initTheme();
-        initPageTransition();
+    const urlParams = new URLSearchParams(window.location.search);
+    const actionCode = urlParams.get('oobCode');
 
-        // 1. Ambil oobCode dari URL (lemparan dari auth-handler)
-        const urlParams = new URLSearchParams(window.location.search);
-        const actionCode = urlParams.get('oobCode');
+    const sIcon = document.getElementById('status-icon');
+    const sTitle = document.getElementById('status-title');
+    const sText = document.getElementById('status-text');
+    const resendSection = document.getElementById('resend-section');
 
-        // Referensi elemen UI
-        const statusIcon = document.getElementById('status-icon');
-        const statusTitle = document.getElementById('status-title');
-        const statusText = document.getElementById('status-text');
-        const footerAction = document.getElementById('footer-action');
-
-        async function verifyEmail() {
-            if (!actionCode) {
-                showToast("Kode verifikasi tidak ditemukan.", "error");
-                statusIcon.innerText = "❌";
-                statusTitle.innerText = "Akses Ditolak";
-                statusText.innerText = "Lu masuk ke halaman ini tanpa kode verifikasi yang valid.";
-                footerAction.style.display = "block";
-                return;
-            }
-
-            try {
-                startProgress();
-                
-                // 2. Eksekusi verifikasi kode ke Firebase
-                await applyActionCode(auth, actionCode);
-                
-                doneProgress();
-                
-                // UI Sukses
-                statusIcon.innerText = "✅";
-                statusTitle.innerText = "Verifikasi Berhasil!";
-                statusText.innerText = "Akun lu sekarang sudah aktif. Mengalihkan ke login dalam 3 detik...";
-                showToast("Email berhasil diverifikasi! 🎉", "success");
-
-                // Auto redirect ke login
-                setTimeout(() => {
-                    window.location.href = 'login.html';
-                }, 3500);
-
-            } catch (error) {
-                doneProgress();
-                console.error("Firebase Verify Error:", error);
-                
-                // UI Gagal
-                statusIcon.innerText = "❌";
-                statusTitle.innerText = "Verifikasi Gagal";
-                statusText.innerText = "Link sudah kadaluarsa atau kode sudah pernah digunakan sebelumnya.";
-                footerAction.style.display = "block";
-                
-                showToast("Gagal memverifikasi email.", "error");
-            }
+    // 1. LOGIKA AUTO-VERIFY (Kalau user bawa kode dari Gmail)
+    async function handleVerify() {
+      if (actionCode) {
+        try {
+          startProgress();
+          await applyActionCode(auth, actionCode);
+          doneProgress();
+          
+          sIcon.innerText = "✅";
+          sTitle.innerText = "Verifikasi Berhasil!";
+          sText.innerText = "Email lu udah aktif. Sekarang lu bisa login dan mulai pake Vamorax.";
+          showToast("Email Verified! 🎉", "success");
+          
+          setTimeout(() => window.location.href = 'login.html', 3000);
+        } catch (err) {
+          doneProgress();
+          showError("Link Kadaluarsa", "Link verifikasi ini udah basi atau udah pernah dipake.");
         }
+      } else {
+        showError("Akses Ditolak", "Lu masuk tanpa kode verifikasi yang valid.");
+      }
+    }
 
-        // Jalankan fungsi verifikasi otomatis saat page load
-        verifyEmail();
-    </script>
+    function showError(title, msg) {
+      sIcon.innerText = "❌";
+      sTitle.innerText = title;
+      sText.innerText = msg;
+      resendSection.classList.remove('hidden'); // Tampilkan form resend
+    }
+
+    // 2. LOGIKA RESEND (Kirim ulang kode)
+    document.getElementById('btn-resend-action').onclick = async () => {
+      const email = document.getElementById('resend-email').value.trim();
+      const btn = document.getElementById('btn-resend-action');
+
+      if (!email) return showToast("Isi emailnya dulu, Le!", "error");
+
+      try {
+        startProgress();
+        btn.disabled = true;
+        btn.innerText = "Mengirim...";
+
+        // Note: Firebase butuh login buat kirim verifikasi, 
+        // tapi kita bisa pakai cara 'minta password reset' atau arahkan user login dulu.
+        // Cara paling aman buat 'Resend': Minta mereka login, nanti sistem auth.js kita yang baru bakal nangkep dan kirim ulang.
+        
+        showToast("Coba login dulu, nanti sistem otomatis kirim ulang kodenya!", "info");
+        setTimeout(() => window.location.href = 'login.html', 2000);
+        
+      } catch (e) {
+        doneProgress();
+        showToast("Gagal: " + e.message, "error");
+        btn.disabled = false;
+        btn.innerText = "Kirim Ulang Link";
+      }
+    };
+
+    handleVerify();
+  </script>
 </body>
 </html>
