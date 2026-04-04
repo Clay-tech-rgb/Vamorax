@@ -25,21 +25,24 @@
   document.documentElement.setAttribute('data-theme', t);
 
   // Parse Firebase action params
+// Parse Firebase action params
   const p       = new URLSearchParams(window.location.search);
   const mode    = p.get('mode');
   const oobCode = p.get('oobCode');
   const lang    = p.get('lang') || 'en';
 
   if (mode === 'verifyEmail' && oobCode) {
-    window.location.replace('/verify-email?mode=verifyEmail&oobCode=' + oobCode + '&lang=' + lang);
+    // Tambahin .html di sini
+    window.location.replace('/verify-email.html?mode=verifyEmail&oobCode=' + oobCode + '&lang=' + lang);
   } else if (mode === 'resetPassword' && oobCode) {
-    window.location.replace('/reset-password?mode=resetPassword&oobCode=' + oobCode + '&lang=' + lang);
+    // Tambahin .html di sini
+    window.location.replace('/reset-password.html?mode=resetPassword&oobCode=' + oobCode + '&lang=' + lang);
   } else if (mode === 'recoverEmail' && oobCode) {
-    // Email recovery — just go to login with a message
-    window.location.replace('/login?recovered=1');
+    // Tambahin .html di sini
+    window.location.replace('/login.html?recovered=1');
   } else {
-    // Unknown mode — go home
-    window.location.replace('/');
+    // Tambahin .html di sini
+    window.location.replace('/index.html');
   }
 </script>
 </body>
