@@ -158,8 +158,17 @@ export function initLoginPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: email.split('@')[0] });
       await saveUserToFirestore(cred.user);
-      try { await sendEmailVerification(cred.user); } catch {}
+      // Send verification email with correct action URL
+      const actionCodeSettings = {
+        url: window.location.origin + '/auth-handler.html',
+        handleCodeInApp: false,
+      };
+      try { await sendEmailVerification(cred.user, actionCodeSettings); } catch(e) {
+        console.warn('sendEmailVerification failed:', e.message);
+      }
       showToast('Account created! Please verify your email.', 'success');
+      // Sign out immediately so user can't access dashboard unverified
+      await signOut(auth);
       window.location.href = 'verify-email.html';
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'

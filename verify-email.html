@@ -63,19 +63,34 @@
   const resendMsg = document.getElementById('resendMsg');
 
   onAuthStateChanged(auth, user => {
-    if (!user) { window.location.href = 'login.html'; return; }
+    if (!user) {
+      // User signed out (normal after register) — just show the page
+      if (emailEl) emailEl.textContent = localStorage.getItem('pending_verify_email') || 'your email';
+      return;
+    }
     if (user.emailVerified) { window.location.href = 'dashboard.html'; return; }
     if (emailEl) emailEl.textContent = user.email;
+    localStorage.setItem('pending_verify_email', user.email);
   });
 
   resendBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
-    if (!user) return;
+    if (!user) {
+      // User is signed out — tell them to sign in first to resend
+      resendMsg.textContent = 'Please sign in first, then request a new verification email from your account.';
+      resendMsg.style.color = 'var(--text-3)';
+      resendMsg.style.display = 'block';
+      return;
+    }
     resendBtn.disabled = true;
     resendBtn.textContent = 'Sending...';
     try {
-      await sendEmailVerification(user);
-      resendMsg.textContent = 'Verification email sent!';
+      const actionCodeSettings = {
+        url: window.location.origin + '/auth-handler.html',
+        handleCodeInApp: false,
+      };
+      await sendEmailVerification(user, actionCodeSettings);
+      resendMsg.textContent = 'Verification email sent! Check your inbox.';
       resendMsg.style.color = '#4ade80';
     } catch (e) {
       resendMsg.textContent = e.code === 'auth/too-many-requests'
@@ -84,20 +99,13 @@
       resendMsg.style.color = '#ef4444';
     }
     resendMsg.style.display = 'block';
-    // Re-enable after 60s
     setTimeout(() => { resendBtn.disabled = false; resendBtn.textContent = 'Resend verification email'; }, 60000);
   });
 
-  // Poll every 3s to check if verified
-  const poll = setInterval(async () => {
-    const user = auth.currentUser;
-    if (!user) { clearInterval(poll); return; }
-    await user.reload();
-    if (user.emailVerified) {
-      clearInterval(poll);
-      window.location.href = 'dashboard.html';
-    }
-  }, 3000);
+  // If user signs in and is verified, redirect to dashboard
+  onAuthStateChanged(auth, user => {
+    if (user?.emailVerified) window.location.href = 'dashboard.html';
+  });
 </script>
 </body>
 </html>
