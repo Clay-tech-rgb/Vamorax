@@ -9,5 +9,22 @@
         { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" }
       ]
     }
+  ],
+  "rewrites": [
+    { "source": "/shop", "destination": "/shop.html" },
+    { "source": "/free-presets", "destination": "/free-presets.html" },
+    { "source": "/tutorials", "destination": "/tutorials.html" },
+    { "source": "/contact", "destination": "/contact.html" },
+    { "source": "/login", "destination": "/login.html" },
+    { "source": "/dashboard", "destination": "/dashboard.html" },
+    { "source": "/checkout", "destination": "/checkout.html" },
+    { "source": "/receipt", "destination": "/receipt.html" },
+    { "source": "/search", "destination": "/search.html" },
+    { "source": "/payment-qris", "destination": "/payment-qris.html" },
+    { "source": "/admin", "destination": "/admin.html" },
+    { "source": "/verify-email", "destination": "/verify-email.html" },
+    { "source": "/reset-password", "destination": "/reset-password.html" },
+    { "source": "/forgot-password", "destination": "/forgot-password.html" },
+    { "source": "/auth-handler", "destination": "/auth-handler.html" }
   ]
 }

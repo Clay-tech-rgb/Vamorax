@@ -5,6 +5,7 @@
   <title>Sign in — Vamorax</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
+  <script src="https://www.google.com/recaptcha/api.js" async defer></script>
   <script>history.replaceState(null,'','/login')</script>
 </head>
 <body>
@@ -83,11 +84,7 @@
             <label class="form-label">Confirm password</label>
             <input class="form-input" type="password" name="confirm" placeholder="Repeat password" required />
           </div>
-          <div style="display:flex;align-items:center;gap:10px;padding:11px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:16px">
-            <input type="checkbox" id="captcha" style="width:14px;height:14px;accent-color:var(--text);cursor:pointer;flex-shrink:0" />
-            <label for="captcha" style="font-size:12px;color:var(--text-2);cursor:pointer">I'm not a robot</label>
-            <svg style="margin-left:auto;flex-shrink:0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-          </div>
+          <div style="margin-bottom:16px" id="recaptcha-container"></div>
           <button type="submit" class="btn btn-primary w-full" style="justify-content:center">Create account</button>
         </form>
       </div>
@@ -102,11 +99,10 @@
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
   import { auth, onAuthStateChanged, sendPasswordResetEmail } from './js/firebase-config.js';
-  import { loadRecaptcha, addHoneypot, disableConsoleInProd } from './js/security.js';
+  import { addHoneypot, disableConsoleInProd } from './js/security.js';
 
   initPageTransition();
   initWaveBackground();
-  loadRecaptcha();
   disableConsoleInProd();
   startProgress();
   initTheme();
@@ -193,16 +189,29 @@
 
         setTimeout(() => { inPanel.style.transition = ''; }, 350);
         currentTab = next;
+        if (next === 'register') initRecaptchaWidget();
       }, 180);
     });
   });
 
-  // Register validation
+  // Init reCAPTCHA v2 widget when register tab is shown
+  let recaptchaWidgetId = null;
+  function initRecaptchaWidget() {
+    if (recaptchaWidgetId !== null) return;
+    if (!window.grecaptcha) { setTimeout(initRecaptchaWidget, 500); return; }
+    recaptchaWidgetId = window.grecaptcha.render('recaptcha-container', {
+      sitekey: '6LcbQaQsAAAAAKE6r0wj_2X--DsEb0f15kXWE2gn',
+      theme: document.documentElement.getAttribute('data-theme') === 'dark' ? 'dark' : 'light',
+    });
+  }
+
+  // Register validation — check reCAPTCHA v2
   document.getElementById('register-form')?.addEventListener('submit', e => {
-    const pw = e.target.querySelector('[name="password"]').value;
+    const pw      = e.target.querySelector('[name="password"]').value;
     const confirm = e.target.querySelector('[name="confirm"]').value;
     if (pw !== confirm) { e.preventDefault(); showToast('Passwords do not match', 'error'); return; }
-    if (!document.getElementById('captcha').checked) { e.preventDefault(); showToast('Please verify you are not a robot', 'error'); return; }
+    const token = window.grecaptcha?.getResponse(recaptchaWidgetId);
+    if (!token) { e.preventDefault(); showToast('Please complete the reCAPTCHA', 'error'); return; }
   });
 </script>
 </body>
