@@ -4,42 +4,131 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="logo Vm.png" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Vamorax</title>
+  <title>Vamorax — Account Action</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
 </head>
 <body>
+<div id="top-progress"></div>
 <div class="auth-bg">
   <div class="auth-orb auth-orb-1"></div>
   <div class="auth-orb auth-orb-2"></div>
   <div class="auth-orb auth-orb-3"></div>
 </div>
-<div style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:16px">
-  <span class="spinner" style="width:32px;height:32px;border-width:3px"></span>
-  <p style="font-size:13px;color:var(--text-2);font-family:var(--font)">Processing...</p>
+
+<div class="page-content">
+<div class="auth-wrap">
+  <div class="auth-card" id="authCard" style="text-align:center">
+    <div style="font-size:13px;color:var(--text-3)">Loading...</div>
+  </div>
+</div>
 </div>
 
-<script>
-  // Read theme
-  const t = localStorage.getItem('theme') || 'dark';
-  document.documentElement.setAttribute('data-theme', t);
+<script type="module">
+  import { initTheme, startProgress, doneProgress, showToast } from './js/ui.js';
+  import { auth } from './js/firebase-config.js';
+  import { initPageTransition } from './js/transition.js';
+  import {
+    verifyPasswordResetCode, confirmPasswordReset,
+    applyActionCode, checkActionCode
+  } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
 
-  // Parse Firebase action params
-  const p       = new URLSearchParams(window.location.search);
-  const mode    = p.get('mode');
-  const oobCode = p.get('oobCode');
-  const lang    = p.get('lang') || 'en';
+  initPageTransition();
+  startProgress();
+  initTheme();
+  doneProgress();
 
-  if (mode === 'verifyEmail' && oobCode) {
-    window.location.replace('/verify-email?mode=verifyEmail&oobCode=' + oobCode + '&lang=' + lang);
-  } else if (mode === 'resetPassword' && oobCode) {
-    window.location.replace('/reset-password?mode=resetPassword&oobCode=' + oobCode + '&lang=' + lang);
-  } else if (mode === 'recoverEmail' && oobCode) {
-    // Email recovery — just go to login with a message
-    window.location.replace('/login?recovered=1');
+  const card   = document.getElementById('authCard');
+  const params = new URLSearchParams(window.location.search);
+  const mode   = params.get('mode');
+  const oobCode = params.get('oobCode');
+
+  if (!mode || !oobCode) {
+    card.innerHTML = `<p style="color:#ef4444">Invalid link. <a href="login.html" style="color:var(--text)">Go to login</a></p>`;
+  } else if (mode === 'resetPassword') {
+    showResetForm();
+  } else if (mode === 'verifyEmail') {
+    handleVerifyEmail();
   } else {
-    // Unknown mode — go home
-    window.location.replace('/');
+    card.innerHTML = `<p style="color:var(--text-2)">Unknown action. <a href="login.html" style="color:var(--text)">Go to login</a></p>`;
+  }
+
+  // ── Reset Password ──
+  async function showResetForm() {
+    try {
+      const email = await verifyPasswordResetCode(auth, oobCode);
+      card.innerHTML = `
+        <div style="width:48px;height:48px;background:var(--surface);border:1px solid var(--border);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 16px">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        </div>
+        <h1 style="font-size:18px;font-weight:700;margin-bottom:6px">Reset password</h1>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:20px">${email}</p>
+        <form id="resetForm">
+          <div class="form-group" style="text-align:left">
+            <label class="form-label">New password</label>
+            <input class="form-input" type="password" id="newPw" placeholder="Min. 6 characters" required minlength="6" />
+          </div>
+          <div class="form-group" style="text-align:left">
+            <label class="form-label">Confirm password</label>
+            <input class="form-input" type="password" id="confirmPw" placeholder="Repeat password" required />
+          </div>
+          <button type="submit" class="btn btn-primary w-full" style="justify-content:center" id="resetBtn">Set new password</button>
+        </form>
+        <p id="resetErr" style="font-size:12px;color:#ef4444;margin-top:10px;display:none"></p>
+      `;
+
+      document.getElementById('resetForm').addEventListener('submit', async e => {
+        e.preventDefault();
+        const pw  = document.getElementById('newPw').value;
+        const cpw = document.getElementById('confirmPw').value;
+        const btn = document.getElementById('resetBtn');
+        const err = document.getElementById('resetErr');
+
+        if (pw !== cpw) { err.textContent = 'Passwords do not match.'; err.style.display = 'block'; return; }
+
+        btn.disabled = true; btn.innerHTML = '<span class="spinner"></span> Saving...';
+        try {
+          await confirmPasswordReset(auth, oobCode, pw);
+          card.innerHTML = `
+            <div style="font-size:32px;margin-bottom:12px">✅</div>
+            <h1 style="font-size:18px;font-weight:700;margin-bottom:8px">Password updated!</h1>
+            <p style="font-size:13px;color:var(--text-2);margin-bottom:20px">You can now sign in with your new password.</p>
+            <a href="login.html" class="btn btn-primary w-full" style="justify-content:center">Go to sign in</a>
+          `;
+        } catch(e) {
+          err.textContent = e.code === 'auth/expired-action-code'
+            ? 'Link expired. Request a new reset link.'
+            : 'Failed to reset. Try again.';
+          err.style.display = 'block';
+          btn.disabled = false; btn.textContent = 'Set new password';
+        }
+      });
+    } catch(e) {
+      card.innerHTML = `
+        <div style="font-size:32px;margin-bottom:12px">❌</div>
+        <p style="color:#ef4444;margin-bottom:16px">This reset link is invalid or has expired.</p>
+        <a href="login.html" class="btn btn-primary w-full" style="justify-content:center">Request new link</a>
+      `;
+    }
+  }
+
+  // ── Verify Email ──
+  async function handleVerifyEmail() {
+    try {
+      await applyActionCode(auth, oobCode);
+      card.innerHTML = `
+        <div style="font-size:32px;margin-bottom:12px">✅</div>
+        <h1 style="font-size:18px;font-weight:700;margin-bottom:8px">Email verified!</h1>
+        <p style="font-size:13px;color:var(--text-2);margin-bottom:20px">Your account is now active.</p>
+        <a href="dashboard.html" class="btn btn-primary w-full" style="justify-content:center">Go to dashboard</a>
+      `;
+    } catch(e) {
+      card.innerHTML = `
+        <div style="font-size:32px;margin-bottom:12px">❌</div>
+        <p style="color:#ef4444;margin-bottom:16px">Verification link is invalid or expired.</p>
+        <a href="login.html" class="btn btn-ghost w-full" style="justify-content:center">Back to login</a>
+      `;
+    }
   }
 </script>
 </body>

@@ -35,6 +35,14 @@ export function requireAuth(redirectTo = 'login.html') {
         localStorage.setItem('auth_redirect', window.location.href);
         window.location.href = redirectTo;
         resolve(false);
+      } else if (!user.emailVerified) {
+        // Google users are auto-verified, only block email/password unverified
+        if (user.providerData?.[0]?.providerId === 'password') {
+          window.location.href = 'verify-email.html';
+          resolve(false);
+        } else {
+          resolve(true);
+        }
       } else {
         resolve(true);
       }
