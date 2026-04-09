@@ -61,7 +61,12 @@
           </div>
           <div class="form-group" style="margin-bottom:20px">
             <label class="form-label">Password</label>
-            <input class="form-input" type="password" name="password" placeholder="Password" required />
+            <div style="position:relative">
+              <input class="form-input" type="password" name="password" placeholder="Password" required style="padding-right:40px" />
+              <button type="button" class="pw-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px" onclick="togglePw(this)">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
             <div style="text-align:right;margin-top:6px">
               <a href="forgot-password.html" style="font-size:12px;color:var(--text-3);transition:color 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--text-3)'">Forgot password?</a>
             </div>
@@ -78,11 +83,21 @@
           </div>
           <div class="form-group">
             <label class="form-label">Password</label>
-            <input class="form-input" type="password" name="password" placeholder="Min. 8 characters" required minlength="8" />
+            <div style="position:relative">
+              <input class="form-input" type="password" name="password" placeholder="Min. 8 characters" required minlength="8" style="padding-right:40px" />
+              <button type="button" class="pw-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px" onclick="togglePw(this)">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <div class="form-group" style="margin-bottom:16px">
             <label class="form-label">Confirm password</label>
-            <input class="form-input" type="password" name="confirm" placeholder="Repeat password" required />
+            <div style="position:relative">
+              <input class="form-input" type="password" name="confirm" placeholder="Repeat password" required style="padding-right:40px" />
+              <button type="button" class="pw-toggle" style="position:absolute;right:10px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:var(--text-3);padding:4px" onclick="togglePw(this)">
+                <svg class="eye-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+              </button>
+            </div>
           </div>
           <div style="margin-bottom:16px" id="recaptcha-container"></div>
           <button type="submit" class="btn btn-primary w-full" style="justify-content:center">Create account</button>
@@ -93,6 +108,19 @@
   </div>
 </div><!-- /page-content -->
 
+<script>
+  // Show/hide password toggle
+  function togglePw(btn) {
+    const input = btn.previousElementSibling || btn.parentElement.querySelector('input');
+    const isHidden = input.type === 'password';
+    input.type = isHidden ? 'text' : 'password';
+    const svg = btn.querySelector('svg');
+    svg.innerHTML = isHidden
+      ? '<path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94"/><path d="M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/>'
+      : '<path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>';
+    btn.style.color = isHidden ? 'var(--text-2)' : 'var(--text-3)';
+  }
+</script>
 <script type="module">
   import { initTheme, startProgress, doneProgress, showToast, initSmoothScroll } from './js/ui.js';
   import { initLoginPage, isLoggedIn, signInWithGoogle } from './js/auth.js';
