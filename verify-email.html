@@ -76,10 +76,13 @@
   resendBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) {
-      // User is signed out — tell them to sign in first to resend
-      resendMsg.textContent = 'Please sign in first, then request a new verification email from your account.';
+      // User signed out — need to sign in again to resend
+      // Redirect to login with a flag
+      localStorage.setItem('resend_verify', '1');
+      resendMsg.textContent = 'Sign in again to resend the verification email.';
       resendMsg.style.color = 'var(--text-3)';
       resendMsg.style.display = 'block';
+      setTimeout(() => window.location.href = 'login.html', 2000);
       return;
     }
     resendBtn.disabled = true;
@@ -90,8 +93,10 @@
         handleCodeInApp: false,
       };
       await sendEmailVerification(user, actionCodeSettings);
-      resendMsg.textContent = 'Verification email sent! Check your inbox.';
+      resendMsg.textContent = '✓ Verification email sent! Check your inbox (and spam folder).';
       resendMsg.style.color = '#4ade80';
+      // Sign out after resend so user can't bypass
+      await signOut(auth);
     } catch (e) {
       resendMsg.textContent = e.code === 'auth/too-many-requests'
         ? 'Too many requests. Wait a few minutes.'

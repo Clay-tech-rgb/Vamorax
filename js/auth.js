@@ -113,6 +113,18 @@ export function initLoginPage() {
         return;
       }
       showToast('Welcome back!', 'success');
+      // Check if user came back to resend verification
+      if (localStorage.getItem('resend_verify') === '1' && !auth.currentUser?.emailVerified) {
+        localStorage.removeItem('resend_verify');
+        const actionCodeSettings = {
+          url: window.location.origin + '/auth-handler.html',
+          handleCodeInApp: false,
+        };
+        try { await sendEmailVerification(auth.currentUser, actionCodeSettings); } catch {}
+        await signOut(auth);
+        window.location.href = 'verify-email.html';
+        return;
+      }
       const raw = localStorage.getItem('auth_redirect') || '';
       const redirect = raw && raw.startsWith(window.location.origin) && !raw.includes('login')
         ? raw : 'dashboard.html';
@@ -158,16 +170,14 @@ export function initLoginPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: email.split('@')[0] });
       await saveUserToFirestore(cred.user);
-      // Send verification email with correct action URL
+      // Send verification email BEFORE signing out
       const actionCodeSettings = {
         url: window.location.origin + '/auth-handler.html',
         handleCodeInApp: false,
       };
-      try { await sendEmailVerification(cred.user, actionCodeSettings); } catch(e) {
-        console.warn('sendEmailVerification failed:', e.message);
-      }
-      showToast('Account created! Please verify your email.', 'success');
-      // Sign out immediately so user can't access dashboard unverified
+      await sendEmailVerification(cred.user, actionCodeSettings);
+      showToast('Account created! Check your email to verify.', 'success');
+      // Sign out AFTER email is sent
       await signOut(auth);
       window.location.href = 'verify-email.html';
     } catch (err) {
