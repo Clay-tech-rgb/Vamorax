@@ -64,7 +64,6 @@
 
   onAuthStateChanged(auth, user => {
     if (!user) {
-      // User signed out (normal after register) — just show the page
       if (emailEl) emailEl.textContent = localStorage.getItem('pending_verify_email') || 'your email';
       return;
     }
@@ -76,13 +75,10 @@
   resendBtn.addEventListener('click', async () => {
     const user = auth.currentUser;
     if (!user) {
-      // User signed out — need to sign in again to resend
-      // Redirect to login with a flag
-      localStorage.setItem('resend_verify', '1');
-      resendMsg.textContent = 'Sign in again to resend the verification email.';
+      resendMsg.textContent = 'Session expired. Please sign in again.';
       resendMsg.style.color = 'var(--text-3)';
       resendMsg.style.display = 'block';
-      setTimeout(() => window.location.href = 'login.html', 2000);
+      setTimeout(() => window.location.href = 'login.html', 1500);
       return;
     }
     resendBtn.disabled = true;
@@ -93,10 +89,8 @@
         handleCodeInApp: false,
       };
       await sendEmailVerification(user, actionCodeSettings);
-      resendMsg.textContent = '✓ Verification email sent! Check your inbox (and spam folder).';
+      resendMsg.textContent = '✓ Sent! Check your inbox and spam folder.';
       resendMsg.style.color = '#4ade80';
-      // Sign out after resend so user can't bypass
-      await signOut(auth);
     } catch (e) {
       resendMsg.textContent = e.code === 'auth/too-many-requests'
         ? 'Too many requests. Wait a few minutes.'
@@ -111,6 +105,20 @@
   onAuthStateChanged(auth, user => {
     if (user?.emailVerified) window.location.href = 'dashboard.html';
   });
+
+  // Poll every 3s — detects when user verifies in another tab
+  const poll = setInterval(async () => {
+    const user = auth.currentUser;
+    if (!user) return;
+    try {
+      await user.reload(); // refresh token from Firebase server
+      if (user.emailVerified) {
+        clearInterval(poll);
+        showToast('Email verified! Redirecting...', 'success');
+        setTimeout(() => window.location.href = 'dashboard.html', 800);
+      }
+    } catch {}
+  }, 3000);
 </script>
 </body>
 </html>

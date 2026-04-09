@@ -177,8 +177,7 @@ export function initLoginPage() {
       };
       await sendEmailVerification(cred.user, actionCodeSettings);
       showToast('Account created! Check your email to verify.', 'success');
-      // Sign out AFTER email is sent
-      await signOut(auth);
+      // Do NOT sign out — keep user logged in so verify-email page can poll
       window.location.href = 'verify-email.html';
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
