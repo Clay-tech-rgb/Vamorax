@@ -5,7 +5,11 @@
   <title>Tools — Vamorax</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
-  <script>history.replaceState(null,'','/edit-hub')</script>
+  <script>
+    // Simpan tab dari URL sebelum replaceState menghapusnya
+    window.__initTab = new URLSearchParams(window.location.search).get('tab');
+    history.replaceState(null,'','/edit-hub');
+  </script>
   <style>
     /* ===== EDIT HUB — TOOL TABS ===== */
     /* ===== HUB TABS — panah di luar track, tidak overlap ===== */
@@ -1320,9 +1324,9 @@ document.addEventListener('click', e => {
 
 // Read ?tab= from URL and switch on load
 (function() {
-  const params = new URLSearchParams(window.location.search);
-  const tab = params.get('tab');
+  const tab = window.__initTab;
   if (tab) switchTab(tab);
+  delete window.__initTab;
 })();
 
 /* ============================================================
@@ -1869,9 +1873,17 @@ document.addEventListener('click', e => {
           <div class="decorator-style-label">${s.name}</div>
           <div class="decorator-style-preview">${out || ''}</div>
         </div>
-        <button class="decorator-copy-btn" onclick="copyText(${JSON.stringify(out)},'${s.name}')">Copy</button>
+        <button class="decorator-copy-btn" data-copy="${encodeURIComponent(out)}" data-label="${s.name}">Copy</button>
       </div>`;
     }).join('');
+    // Attach click listeners after render
+    grid.querySelectorAll('.decorator-copy-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const text = decodeURIComponent(btn.dataset.copy);
+        const label = btn.dataset.label;
+        copyText(text, label);
+      });
+    });
   }
 
   input.addEventListener('input', renderStyles);
@@ -1982,13 +1994,12 @@ document.addEventListener('click', e => {
   let currentFmt = 'png';
   let items = []; // { file, objectUrl, canvas, name }
 
-  // Format buttons
-  document.querySelectorAll('.conv-fmt').forEach(btn => {
+  // Format buttons — scoped to conv-format-btns container
+  document.querySelectorAll('#conv-format-btns .conv-fmt').forEach(btn => {
     btn.addEventListener('click', () => {
-      document.querySelectorAll('.conv-fmt').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('#conv-format-btns .conv-fmt').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFmt = btn.dataset.fmt;
-      // re-render previews with new format label
       renderList();
     });
   });
