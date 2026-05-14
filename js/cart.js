@@ -84,34 +84,35 @@ export function renderCartSidebar() {
 }
 
 export function initCartSidebar() {
-  const sidebar = document.querySelector('.cart-sidebar');
-  const overlay = document.querySelector('.cart-overlay');
-  const closeBtn = document.querySelector('.cart-close');
-  const checkoutBtn = document.querySelector('.cart-checkout-btn');
   window._cartRemove = (id) => { removeFromCart(id); showToast('Removed from cart', 'info'); };
-  // Bind ALL cart buttons (navbar + mobile menu)
-  document.querySelectorAll('.cart-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
-      sidebar?.classList.add('open');
-      overlay?.classList.add('show');
-    });
-  });
-  const close = () => {
-    sidebar?.classList.remove('open');
-    overlay?.classList.remove('show');
-  };
-  closeBtn?.addEventListener('click', close);
-  overlay?.addEventListener('click', close);
-  checkoutBtn?.addEventListener('click', () => {
-    if (getCart().length === 0) { showToast('Your cart is empty', 'error'); return; }
-    const user = auth.currentUser;
-    if (!user) {
-      showToast('Please sign in to checkout', 'info');
-      localStorage.setItem('auth_redirect', 'checkout.html');
-      setTimeout(() => { window.location.href = 'login.html'; }, 1200);
-      return;
+
+  function openCart() {
+    document.querySelector('.cart-sidebar')?.classList.add('open');
+    document.querySelector('.cart-overlay')?.classList.add('show');
+  }
+
+  function closeCart() {
+    document.querySelector('.cart-sidebar')?.classList.remove('open');
+    document.querySelector('.cart-overlay')?.classList.remove('show');
+  }
+
+  document.addEventListener('click', e => {
+    if (e.target.closest('.cart-btn'))   { openCart(); return; }
+    if (e.target.closest('.cart-close')) { closeCart(); return; }
+    if (e.target.classList.contains('cart-overlay')) { closeCart(); return; }
+    if (e.target.closest('.cart-checkout-btn')) {
+      if (getCart().length === 0) { showToast('Your cart is empty', 'error'); return; }
+      const user = auth.currentUser;
+      if (!user) {
+        showToast('Please sign in to checkout', 'info');
+        localStorage.setItem('auth_redirect', 'checkout.html');
+        setTimeout(() => { window.location.href = 'login.html'; }, 1200);
+        return;
+      }
+      window.location.href = 'checkout.html';
     }
-    window.location.href = 'checkout.html';
   });
-  renderCartSidebar(); updateCartBadge();
+
+  renderCartSidebar();
+  updateCartBadge();
 }

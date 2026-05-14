@@ -2,52 +2,130 @@
 <html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8" /><link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>QRIS Payment — Vamorax</title>
+  <title>Payment — Vamorax</title>
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
   <style>
-    .qris-page { min-height: 100vh; display: flex; align-items: center; justify-content: center; padding: 100px 20px 40px; }
-    .qris-card { width: 100%; max-width: 420px; background: var(--bg-2); border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
-    .qris-header { padding: 24px; border-bottom: 1px solid var(--border); }
-    .qris-header-label { font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-3); margin-bottom: 6px; }
-    .qris-header-title { font-size: 18px; font-weight: 700; letter-spacing: -0.3px; }
-    .qris-body { padding: 32px 24px; text-align: center; }
-    .qris-amount { font-size: 32px; font-weight: 800; letter-spacing: -1px; margin-bottom: 4px; }
-    .qris-order-id { font-size: 11px; color: var(--text-3); font-family: monospace; margin-bottom: 28px; }
-    /* QR code container */
-    .qris-qr-wrap {
-      width: 220px; height: 220px; margin: 0 auto 24px;
+    .pay-page { min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 100px 20px 60px; }
+    .pay-wrap { width: 100%; max-width: 480px; }
+
+    /* Order summary */
+    .pay-summary {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 20px 24px;
+      margin-bottom: 20px;
+      display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    }
+    .pay-summary-label { font-size: 12px; color: var(--text-3); margin-bottom: 4px; }
+    .pay-summary-amount { font-size: 24px; font-weight: 800; letter-spacing: -0.8px; }
+    .pay-summary-id { font-size: 11px; color: var(--text-3); font-family: monospace; margin-top: 2px; }
+    .pay-status { display: flex; align-items: center; gap: 7px; font-size: 12px; color: var(--text-3); }
+    .pay-status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text-3); animation: pulse-dot 2s ease-in-out infinite; flex-shrink: 0; }
+    .pay-status-dot.paid { background: #4ade80; animation: none; }
+    @keyframes pulse-dot { 0%,100%{opacity:1}50%{opacity:0.3} }
+
+    /* Method selector */
+    .pay-section-title {
+      font-size: 11px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 12px;
+    }
+    .pay-methods {
+      display: grid; grid-template-columns: 1fr 1fr;
+      gap: 10px; margin-bottom: 24px;
+    }
+    .pay-method {
+      background: var(--bg-2); border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); padding: 14px 16px;
+      cursor: pointer; transition: border-color var(--transition), background var(--transition);
+      display: flex; align-items: center; gap: 12px;
+    }
+    .pay-method:hover { border-color: var(--border-strong); background: var(--bg-3); }
+    .pay-method.active { border-color: var(--text); background: var(--bg-3); }
+    .pay-method-icon {
+      width: 36px; height: 36px; border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 18px; flex-shrink: 0;
+    }
+    .pay-method-name { font-size: 13px; font-weight: 600; }
+    .pay-method-sub { font-size: 11px; color: var(--text-3); margin-top: 1px; }
+    .pay-method-check {
+      margin-left: auto; width: 16px; height: 16px;
+      border-radius: 50%; border: 1.5px solid var(--border);
+      flex-shrink: 0; transition: background var(--transition), border-color var(--transition);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .pay-method.active .pay-method-check {
+      background: var(--text); border-color: var(--text);
+    }
+    .pay-method.active .pay-method-check::after {
+      content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--bg);
+    }
+
+    /* Payment panel */
+    .pay-panel { display: none; }
+    .pay-panel.active { display: block; }
+
+    /* QRIS */
+    .qr-wrap {
+      width: 200px; height: 200px; margin: 0 auto 20px;
       background: #fff; border-radius: var(--radius-md);
       display: flex; align-items: center; justify-content: center;
-      position: relative; padding: 12px;
+      padding: 12px;
     }
-    .qris-qr-wrap canvas, .qris-qr-wrap img { width: 100%; height: 100%; }
-    /* Placeholder shown before gateway provides real QR */
-    .qris-qr-placeholder {
-      display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 10px; width: 100%; height: 100%;
+    .qr-placeholder {
+      display: flex; flex-direction: column; align-items: center;
+      justify-content: center; gap: 8px; width: 100%; height: 100%;
     }
-    .qris-qr-placeholder svg { color: #ccc; }
-    .qris-qr-placeholder p { font-size: 11px; color: #999; text-align: center; line-height: 1.5; }
-    /* Gateway integration note */
-    .qris-gateway-note {
+    .qr-placeholder svg { color: #bbb; }
+    .qr-placeholder p { font-size: 10px; color: #aaa; text-align: center; line-height: 1.5; }
+
+    /* E-wallet transfer */
+    .pay-transfer-card {
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-md); padding: 20px 24px;
+      margin-bottom: 16px;
+    }
+    .pay-transfer-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 12px; margin-bottom: 12px;
+    }
+    .pay-transfer-row:last-child { margin-bottom: 0; }
+    .pay-transfer-key { font-size: 11px; color: var(--text-3); font-weight: 500; }
+    .pay-transfer-val {
+      font-size: 14px; font-weight: 700; font-family: monospace;
+      letter-spacing: 0.5px;
+    }
+    .pay-copy-btn {
+      padding: 4px 10px; font-size: 11px; font-weight: 600;
       background: var(--surface); border: 1px solid var(--border);
-      border-radius: var(--radius); padding: 14px 16px;
-      font-size: 12px; color: var(--text-2); text-align: left;
-      margin-bottom: 20px; line-height: 1.6;
+      border-radius: var(--radius); color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+      flex-shrink: 0;
     }
-    .qris-gateway-note strong { color: var(--text); font-weight: 600; }
-    .qris-steps { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; text-align: left; }
-    .qris-step { display: flex; align-items: flex-start; gap: 12px; font-size: 13px; color: var(--text-2); }
-    .qris-step-num { width: 22px; height: 22px; border-radius: 50%; background: var(--surface); border: 1px solid var(--border); display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; color: var(--text-3); flex-shrink: 0; margin-top: 1px; }
-    .qris-timer { font-size: 13px; color: var(--text-3); margin-bottom: 20px; }
-    .qris-timer span { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
-    .qris-footer { padding: 20px 24px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
-    /* Status polling indicator */
-    .qris-status { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-3); margin-bottom: 16px; }
-    .qris-status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--text-3); animation: pulse-dot 2s ease-in-out infinite; }
-    .qris-status-dot.paid { background: #4ade80; animation: none; }
-    @keyframes pulse-dot { 0%,100% { opacity: 1; } 50% { opacity: 0.3; } }
+    .pay-copy-btn:hover { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .pay-copy-btn.copied { background: #4ade80; color: #000; border-color: #4ade80; }
+
+    /* Steps */
+    .pay-steps { display: flex; flex-direction: column; gap: 8px; margin-bottom: 20px; }
+    .pay-step { display: flex; align-items: flex-start; gap: 10px; font-size: 12px; color: var(--text-2); }
+    .pay-step-num {
+      width: 20px; height: 20px; border-radius: 50%;
+      background: var(--surface); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 9px; font-weight: 700; color: var(--text-3); flex-shrink: 0; margin-top: 1px;
+    }
+
+    /* Timer */
+    .pay-timer { font-size: 12px; color: var(--text-3); text-align: center; margin-bottom: 20px; }
+    .pay-timer span { font-weight: 700; color: var(--text); font-variant-numeric: tabular-nums; }
+
+    /* Footer */
+    .pay-footer { display: flex; gap: 10px; margin-top: 8px; }
+
+    @media (max-width: 480px) {
+      .pay-methods { grid-template-columns: 1fr; }
+    }
   </style>
   <script>history.replaceState(null,'','/payment-qris')</script>
 </head>
@@ -58,9 +136,8 @@
 <nav class="navbar">
   <a href="index.html" class="navbar-brand"><svg viewBox="0 0 100 100"><path d="M25 30 Q50 60 75 30"/><path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/></svg></a>
   <div class="navbar-actions">
-    
     <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
-    <a href="checkout.html" class="btn btn-ghost btn-sm">
+    <a href="javascript:history.back()" class="btn btn-ghost btn-sm">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
       Back
     </a>
@@ -68,185 +145,342 @@
 </nav>
 
 <div class="page-content">
-<div class="qris-page">
-  <div class="qris-card">
+<div class="pay-page">
+  <div class="pay-wrap">
 
-    <div class="qris-header">
-      <div class="qris-header-label">Payment</div>
-      <div class="qris-header-title">Scan QRIS to Pay</div>
+    <div style="margin-bottom:28px">
+      <div style="font-size:11px;color:var(--text-3);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px">Checkout</div>
+      <h1 style="font-size:22px;font-weight:800;letter-spacing:-0.5px">Pilih metode pembayaran</h1>
     </div>
 
-    <div class="qris-body">
-      <div class="qris-amount" id="qrisAmount">Rp 0</div>
-      <div class="qris-order-id" id="qrisOrderId">—</div>
+    <!-- Order summary -->
+    <div class="pay-summary">
+      <div>
+        <div class="pay-summary-label">Total pembayaran</div>
+        <div class="pay-summary-amount" id="payAmount">Rp 0</div>
+        <div class="pay-summary-id" id="payOrderId">—</div>
+      </div>
+      <div class="pay-status">
+        <div class="pay-status-dot" id="payStatusDot"></div>
+        <span id="payStatusText">Menunggu pembayaran...</span>
+      </div>
+    </div>
 
-      <!-- QR Code box — payment gateway injects real QR here -->
-      <div class="qris-qr-wrap" id="qrisQrWrap">
-        <div class="qris-qr-placeholder" id="qrisPlaceholder">
-          <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-linejoin="round">
+    <!-- Method selector -->
+    <div class="pay-section-title">Metode pembayaran</div>
+    <div class="pay-methods" id="payMethods">
+      <div class="pay-method active" data-method="qris">
+        <div class="pay-method-icon" style="background:#f0f0f0">🔲</div>
+        <div>
+          <div class="pay-method-name">QRIS</div>
+          <div class="pay-method-sub">Semua e-wallet</div>
+        </div>
+        <div class="pay-method-check"></div>
+      </div>
+      <div class="pay-method" data-method="gopay">
+        <div class="pay-method-icon" style="background:#00AED6;color:#fff;font-size:13px;font-weight:800">GP</div>
+        <div>
+          <div class="pay-method-name">GoPay</div>
+          <div class="pay-method-sub">Transfer manual</div>
+        </div>
+        <div class="pay-method-check"></div>
+      </div>
+      <div class="pay-method" data-method="dana">
+        <div class="pay-method-icon" style="background:#118EEA;color:#fff;font-size:13px;font-weight:800">DA</div>
+        <div>
+          <div class="pay-method-name">DANA</div>
+          <div class="pay-method-sub">Transfer manual</div>
+        </div>
+        <div class="pay-method-check"></div>
+      </div>
+      <div class="pay-method" data-method="seabank">
+        <div class="pay-method-icon" style="background:#2B5CE6;color:#fff;font-size:13px;font-weight:800">SB</div>
+        <div>
+          <div class="pay-method-name">SeaBank</div>
+          <div class="pay-method-sub">Transfer rekening</div>
+        </div>
+        <div class="pay-method-check"></div>
+      </div>
+    </div>
+
+    <!-- QRIS Panel -->
+    <div class="pay-panel active" id="panel-qris">
+      <div class="pay-section-title">Scan QR Code</div>
+      <div class="qr-wrap">
+        <div class="qr-placeholder">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="0.8">
             <rect x="3" y="3" width="5" height="5"/><rect x="16" y="3" width="5" height="5"/>
             <rect x="3" y="16" width="5" height="5"/>
             <path d="M21 16h-3v3"/><path d="M21 21v-1"/><path d="M16 16v1"/>
             <path d="M11 3v5"/><path d="M3 11h5"/><path d="M11 11h1"/>
             <path d="M11 16h1"/><path d="M16 11h1"/>
           </svg>
-          <p>QR code will appear here<br/>after payment gateway is connected</p>
+          <p>QR muncul setelah<br/>payment gateway terhubung</p>
         </div>
-        <!-- Real QR rendered here by gateway SDK, e.g.: -->
-        <!-- <img id="qrisImage" src="" alt="QRIS" style="display:none" /> -->
       </div>
-
-      <!-- Payment status -->
-      <div class="qris-status" id="qrisStatus">
-        <div class="qris-status-dot" id="qrisStatusDot"></div>
-        <span id="qrisStatusText">Waiting for payment...</span>
-      </div>
-
-      <!-- Countdown timer -->
-      <div class="qris-timer">Expires in <span id="qrisTimer">15:00</span></div>
-
-      <!-- Gateway integration note -->
-      <div class="qris-gateway-note">
-        <strong>For developers:</strong> Replace the placeholder above with your payment gateway's QR code.
-        Supported: <strong>Midtrans</strong>, <strong>Xendit</strong>, <strong>Duitku</strong>, or any QRIS-compatible gateway.
-        Call your gateway's API with <code style="font-family:monospace;font-size:11px">orderId</code> and <code style="font-family:monospace;font-size:11px">amount</code> to get the QR string, then render it here.
-      </div>
-
-      <!-- How to pay steps -->
-      <div class="qris-steps">
-        <div class="qris-step"><div class="qris-step-num">1</div><span>Open your e-wallet app (GoPay, OVO, DANA, ShopeePay, etc.)</span></div>
-        <div class="qris-step"><div class="qris-step-num">2</div><span>Tap <strong style="color:var(--text)">Scan QR</strong> or <strong style="color:var(--text)">Pay</strong></span></div>
-        <div class="qris-step"><div class="qris-step-num">3</div><span>Point your camera at the QR code above</span></div>
-        <div class="qris-step"><div class="qris-step-num">4</div><span>Confirm the amount and complete payment</span></div>
-        <div class="qris-step"><div class="qris-step-num">5</div><span>This page will update automatically once paid</span></div>
+      <div class="pay-steps">
+        <div class="pay-step"><div class="pay-step-num">1</div><span>Buka app e-wallet (GoPay, OVO, DANA, ShopeePay, dll)</span></div>
+        <div class="pay-step"><div class="pay-step-num">2</div><span>Tap <strong style="color:var(--text)">Scan QR</strong> atau <strong style="color:var(--text)">Bayar</strong></span></div>
+        <div class="pay-step"><div class="pay-step-num">3</div><span>Arahkan kamera ke QR code di atas</span></div>
+        <div class="pay-step"><div class="pay-step-num">4</div><span>Konfirmasi nominal dan selesaikan pembayaran</span></div>
       </div>
     </div>
 
-    <div class="qris-footer">
-      <button class="btn btn-ghost w-full" onclick="window.location.href='checkout.html'">Cancel</button>
-      <!-- Dev/demo: simulate payment success -->
-      <button class="btn btn-primary w-full" id="simulatePayBtn">Simulate Payment</button>
+    <!-- GoPay Panel -->
+    <div class="pay-panel" id="panel-gopay">
+      <div class="pay-section-title">Transfer ke GoPay</div>
+      <div class="pay-transfer-card">
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nomor GoPay</div>
+            <div class="pay-transfer-val" id="gopay-number">0812-XXXX-XXXX</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('gopay-number', this)">Copy</button>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nama</div>
+            <div class="pay-transfer-val">Vamorax</div>
+          </div>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nominal</div>
+            <div class="pay-transfer-val" id="gopay-amount">Rp 0</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('gopay-amount', this)">Copy</button>
+        </div>
+      </div>
+      <div class="pay-steps">
+        <div class="pay-step"><div class="pay-step-num">1</div><span>Buka aplikasi Gojek → GoPay</span></div>
+        <div class="pay-step"><div class="pay-step-num">2</div><span>Pilih <strong style="color:var(--text)">Kirim</strong> → masukkan nomor di atas</span></div>
+        <div class="pay-step"><div class="pay-step-num">3</div><span>Masukkan nominal <strong style="color:var(--text)" id="gopay-amount-step">Rp 0</strong> dengan tepat</span></div>
+        <div class="pay-step"><div class="pay-step-num">4</div><span>Screenshot bukti transfer, lalu klik <strong style="color:var(--text)">Konfirmasi Pembayaran</strong></span></div>
+      </div>
     </div>
+
+    <!-- DANA Panel -->
+    <div class="pay-panel" id="panel-dana">
+      <div class="pay-section-title">Transfer ke DANA</div>
+      <div class="pay-transfer-card">
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nomor DANA</div>
+            <div class="pay-transfer-val" id="dana-number">0812-XXXX-XXXX</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('dana-number', this)">Copy</button>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nama</div>
+            <div class="pay-transfer-val">Vamorax</div>
+          </div>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nominal</div>
+            <div class="pay-transfer-val" id="dana-amount">Rp 0</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('dana-amount', this)">Copy</button>
+        </div>
+      </div>
+      <div class="pay-steps">
+        <div class="pay-step"><div class="pay-step-num">1</div><span>Buka aplikasi DANA</span></div>
+        <div class="pay-step"><div class="pay-step-num">2</div><span>Pilih <strong style="color:var(--text)">Kirim Uang</strong> → masukkan nomor di atas</span></div>
+        <div class="pay-step"><div class="pay-step-num">3</div><span>Masukkan nominal <strong style="color:var(--text)" id="dana-amount-step">Rp 0</strong> dengan tepat</span></div>
+        <div class="pay-step"><div class="pay-step-num">4</div><span>Screenshot bukti transfer, lalu klik <strong style="color:var(--text)">Konfirmasi Pembayaran</strong></span></div>
+      </div>
+    </div>
+
+    <!-- SeaBank Panel -->
+    <div class="pay-panel" id="panel-seabank">
+      <div class="pay-section-title">Transfer ke SeaBank</div>
+      <div class="pay-transfer-card">
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nomor Rekening</div>
+            <div class="pay-transfer-val" id="seabank-number">9000-XXXX-XXXX</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('seabank-number', this)">Copy</button>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Atas Nama</div>
+            <div class="pay-transfer-val">Vamorax</div>
+          </div>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Bank</div>
+            <div class="pay-transfer-val">SeaBank Indonesia</div>
+          </div>
+        </div>
+        <div class="pay-transfer-row">
+          <div>
+            <div class="pay-transfer-key">Nominal</div>
+            <div class="pay-transfer-val" id="seabank-amount">Rp 0</div>
+          </div>
+          <button class="pay-copy-btn" onclick="copyVal('seabank-amount', this)">Copy</button>
+        </div>
+      </div>
+      <div class="pay-steps">
+        <div class="pay-step"><div class="pay-step-num">1</div><span>Buka aplikasi SeaBank atau m-banking manapun</span></div>
+        <div class="pay-step"><div class="pay-step-num">2</div><span>Pilih <strong style="color:var(--text)">Transfer</strong> → Bank Lain → SeaBank</span></div>
+        <div class="pay-step"><div class="pay-step-num">3</div><span>Masukkan nomor rekening dan nominal <strong style="color:var(--text)" id="seabank-amount-step">Rp 0</strong></span></div>
+        <div class="pay-step"><div class="pay-step-num">4</div><span>Screenshot bukti transfer, lalu klik <strong style="color:var(--text)">Konfirmasi Pembayaran</strong></span></div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="pay-timer">Sesi berakhir dalam <span id="payTimer">15:00</span></div>
+
+    <!-- Actions -->
+    <div class="pay-footer">
+      <button class="btn btn-ghost" style="flex:1;justify-content:center" onclick="javascript:history.back()">Batal</button>
+      <button class="btn btn-primary" style="flex:2;justify-content:center" id="simulatePayBtn">
+        Konfirmasi Pembayaran
+      </button>
+    </div>
+
+    <p style="font-size:11px;color:var(--text-3);text-align:center;margin-top:12px;line-height:1.6">
+      Setelah transfer, klik <strong style="color:var(--text-2)">Konfirmasi Pembayaran</strong>.<br/>
+      Akses akan aktif otomatis setelah verifikasi admin (maks. 1×24 jam).
+    </p>
 
   </div>
 </div>
-<footer class="footer"><div class="footer-bottom"><span>© 2025 Vamorax</span><span>Secure payment</span></div></footer>
+<footer class="footer"><div class="footer-bottom"><span>© 2025 Vamorax</span><span>Pembayaran aman</span></div></footer>
 </div><!-- /page-content -->
 
 <script type="module">
   import { initTheme, toggleTheme, startProgress, doneProgress, showToast, initSmoothScroll } from './js/ui.js';
-  import { getCurrentUser } from './js/auth.js';
   import { clearCart } from './js/cart.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
+  import { auth, onAuthStateChanged } from './js/firebase-config.js';
+  import { setMembership } from './js/auth.js';
 
   window.toggleTheme = toggleTheme;
-  initWaveBackground();
-  initPageTransition();
-  startProgress();
-  initTheme();
-  initSmoothScroll();
+  initWaveBackground(); initPageTransition();
+  startProgress(); initTheme(); initSmoothScroll();
 
-  // Auth guard
-  const user = getCurrentUser();
-  if (!user) { window.location.href = 'login.html'; }
+  // ── Payment account details — ganti dengan nomor asli ──
+  const PAYMENT_ACCOUNTS = {
+    gopay:   { number: '0812-XXXX-XXXX', name: 'Vamorax' },
+    dana:    { number: '0812-XXXX-XXXX', name: 'Vamorax' },
+    seabank: { number: '9000-XXXX-XXXX', name: 'Vamorax' },
+  };
 
-  // Load pending order
-  const order = JSON.parse(localStorage.getItem('alight_pending_order') || 'null');
-  if (!order) { window.location.href = 'checkout.html'; }
+  const isMembership = new URLSearchParams(window.location.search).get('type') === 'membership';
+  let currentMethod = 'qris';
 
-  // Populate UI
-  document.getElementById('qrisAmount').textContent =
-    order.totalPrice === 0 ? 'Free' : 'Rp ' + order.totalPrice.toLocaleString('id-ID');
-  document.getElementById('qrisOrderId').textContent = order.orderId;
+  // Method switcher
+  document.querySelectorAll('.pay-method').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.pay-method').forEach(b => b.classList.remove('active'));
+      document.querySelectorAll('.pay-panel').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+      currentMethod = btn.dataset.method;
+      document.getElementById('panel-' + currentMethod)?.classList.add('active');
+    });
+  });
 
-  doneProgress();
+  // Copy helper
+  window.copyVal = function(id, btn) {
+    const text = document.getElementById(id)?.textContent || '';
+    navigator.clipboard.writeText(text.replace(/\s/g, '')).then(() => {
+      btn.textContent = 'Copied!';
+      btn.classList.add('copied');
+      setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 2000);
+    });
+  };
 
-  // =====================================================
-  // PAYMENT GATEWAY INTEGRATION POINT
-  // =====================================================
-  // Replace this section with your actual gateway call.
-  // Example with Midtrans Snap:
-  //
-  //   const snapToken = await fetch('/api/create-transaction', {
-  //     method: 'POST',
-  //     body: JSON.stringify({ orderId: order.orderId, amount: order.totalPrice })
-  //   }).then(r => r.json()).then(d => d.token);
-  //
-  //   window.snap.pay(snapToken, {
-  //     onSuccess: () => confirmPayment(),
-  //     onPending: () => startPolling(),
-  //     onError: () => showToast('Payment failed', 'error'),
-  //   });
-  //
-  // Example with Xendit:
-  //   const qrString = await fetch('/api/create-qris', {
-  //     method: 'POST',
-  //     body: JSON.stringify({ orderId: order.orderId, amount: order.totalPrice })
-  //   }).then(r => r.json()).then(d => d.qr_string);
-  //   renderQR(qrString); // use a QR library like qrcode.js
-  //
-  // =====================================================
+  function fillAmounts(amountText) {
+    ['gopay-amount','dana-amount','seabank-amount'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = amountText;
+    });
+    ['gopay-amount-step','dana-amount-step','seabank-amount-step'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) el.textContent = amountText;
+    });
+    // Fill account numbers
+    Object.entries(PAYMENT_ACCOUNTS).forEach(([key, val]) => {
+      const el = document.getElementById(key + '-number');
+      if (el) el.textContent = val.number;
+    });
+  }
 
-  // Countdown timer (15 minutes)
+  // Countdown timer
   let seconds = 15 * 60;
-  const timerEl = document.getElementById('qrisTimer');
+  const timerEl = document.getElementById('payTimer');
   const timerInterval = setInterval(() => {
     seconds--;
     if (seconds <= 0) {
       clearInterval(timerInterval);
       timerEl.textContent = '00:00';
-      showToast('Payment session expired', 'error');
-      setTimeout(() => window.location.href = 'checkout.html', 2000);
+      showToast('Sesi pembayaran berakhir', 'error');
+      setTimeout(() => window.location.href = isMembership ? 'membership.html' : 'checkout.html', 2000);
       return;
     }
-    const m = String(Math.floor(seconds / 60)).padStart(2, '0');
-    const s = String(seconds % 60).padStart(2, '0');
-    timerEl.textContent = `${m}:${s}`;
+    timerEl.textContent = `${String(Math.floor(seconds/60)).padStart(2,'0')}:${String(seconds%60).padStart(2,'0')}`;
   }, 1000);
 
-  // Status polling placeholder
-  // In production: poll your gateway's API every 3s to check payment status
-  // Example:
-  //   const pollInterval = setInterval(async () => {
-  //     const status = await fetch(`/api/check-status/${order.orderId}`).then(r => r.json());
-  //     if (status.paid) { clearInterval(pollInterval); confirmPayment(); }
-  //   }, 3000);
+  onAuthStateChanged(auth, async user => {
+    if (!user) { window.location.href = 'login.html'; return; }
 
-  function confirmPayment() {
-    clearInterval(timerInterval);
-    // Mark order as paid
-    order.status = 'paid';
-    const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
-    orders.push(order);
-    localStorage.setItem('alight_orders', JSON.stringify(orders));
-    localStorage.setItem('alight_last_order', JSON.stringify(order));
-    localStorage.removeItem('alight_pending_order');
-    // Update user purchased presets
-    if (user) {
-      user.purchasedPresets = [...(user.purchasedPresets || []), ...order.items.map(i => i.id)];
-      localStorage.setItem('alight_user', JSON.stringify(user));
+    if (isMembership) {
+      const pending = JSON.parse(localStorage.getItem('vmx_pending_membership') || 'null');
+      if (!pending) { window.location.href = 'membership.html'; return; }
+      const amountText = 'Rp ' + pending.amount.toLocaleString('id-ID');
+      document.getElementById('payAmount').textContent = amountText;
+      document.getElementById('payOrderId').textContent = pending.orderId;
+      fillAmounts(amountText);
+      doneProgress();
+
+      document.getElementById('simulatePayBtn').addEventListener('click', () => {
+        document.getElementById('payStatusText').textContent = 'Memproses...';
+        document.getElementById('simulatePayBtn').disabled = true;
+        setTimeout(async () => {
+          await setMembership(user.uid, 'pro');
+          localStorage.removeItem('vmx_pending_membership');
+          localStorage.removeItem('vmx_new_user');
+          document.getElementById('payStatusDot').classList.add('paid');
+          document.getElementById('payStatusText').textContent = 'Pembayaran dikonfirmasi!';
+          showToast('Selamat datang di Elite Pass! 🎉', 'success');
+          setTimeout(() => window.location.href = 'dashboard.html', 1500);
+        }, 1500);
+      });
+
+    } else {
+      const order = JSON.parse(localStorage.getItem('alight_pending_order') || 'null');
+      if (!order) { window.location.href = 'checkout.html'; return; }
+      const amountText = order.totalPrice === 0 ? 'Gratis' : 'Rp ' + order.totalPrice.toLocaleString('id-ID');
+      document.getElementById('payAmount').textContent = amountText;
+      document.getElementById('payOrderId').textContent = order.orderId;
+      fillAmounts(amountText);
+      doneProgress();
+
+      document.getElementById('simulatePayBtn').addEventListener('click', () => {
+        document.getElementById('payStatusText').textContent = 'Memproses...';
+        document.getElementById('simulatePayBtn').disabled = true;
+        setTimeout(() => {
+          clearInterval(timerInterval);
+          order.status = 'paid';
+          const orders = JSON.parse(localStorage.getItem('alight_orders') || '[]');
+          orders.push(order);
+          localStorage.setItem('alight_orders', JSON.stringify(orders));
+          localStorage.setItem('alight_last_order', JSON.stringify(order));
+          localStorage.removeItem('alight_pending_order');
+          clearCart();
+          document.getElementById('payStatusDot').classList.add('paid');
+          document.getElementById('payStatusText').textContent = 'Pembayaran dikonfirmasi!';
+          showToast('Pembayaran berhasil!', 'success');
+          setTimeout(() => window.location.href = 'receipt.html', 1500);
+        }, 1500);
+      });
     }
-    clearCart();
-    // Update UI
-    document.getElementById('qrisStatusDot').classList.add('paid');
-    document.getElementById('qrisStatusText').textContent = 'Payment confirmed!';
-    showToast('Payment successful!', 'success');
-    setTimeout(() => window.location.href = 'receipt.html', 1500);
-  }
-
-  // Demo simulate button
-  document.getElementById('simulatePayBtn')?.addEventListener('click', () => {
-    document.getElementById('qrisStatusText').textContent = 'Processing...';
-    setTimeout(confirmPayment, 1500);
   });
 </script>
 </body>
 </html>
-
-
-
-
-
-
-

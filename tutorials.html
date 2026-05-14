@@ -15,7 +15,7 @@
   <ul class="navbar-nav">
     <li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li>
     <li><a href="free-presets.html">Free</a></li>
-    <li><a href="tutorials.html" class="active">Tutorials</a></li><li><a href="contact.html">Contact</a></li>
+    <li><a href="tutorials.html" class="active">Tutorials</a></li><li><a href="edit-hub.html">Edit Hub</a></li><li><a href="membership.html">Membership</a></li><li><a href="contact.html">Contact</a></li>
   </ul>
   <div class="navbar-actions">
     
@@ -46,6 +46,8 @@
   <a href="shop.html">Shop</a>
   <a href="free-presets.html">Free Presets</a>
   <a href="tutorials.html">Tutorials</a>
+  <a href="edit-hub.html">Edit Hub</a>
+  <a href="membership.html">Membership</a>
   <a href="contact.html">Contact</a>
 </div>
 <div class="cart-overlay"></div>
@@ -100,6 +102,22 @@
 </footer>
 </div><!-- /page-content -->
 
+<!-- Swiper CSS -->
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+
+<!-- Tutorial Modal -->
+<div id="tut-modal" class="tut-modal">
+  <div class="tut-modal-box">
+    <button class="tut-modal-close" onclick="window.closeTutorial()">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+    <div id="tut-modal-body"></div>
+  </div>
+</div>
+
+<!-- Swiper JS -->
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
 <script type="module">
   import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav, showToast } from './js/ui.js';
   import { initCartSidebar } from './js/cart.js';
@@ -137,20 +155,13 @@
       return;
     }
     grid.innerHTML = list.map(t => `
-      <div class="tutorial-card" data-category="${t.category||''}">
+      <div class="tutorial-card" data-category="${t.category||''}" data-id="${t.id}" style="cursor:pointer" onclick="openTutorial('${t.id}')">
         <div class="tutorial-cat">${(t.category||'').replace('-',' ')}</div>
         <h3 class="tutorial-title">${t.title||''}</h3>
         <p class="tutorial-desc">${t.description||''}</p>
-        ${t.videoUrl ? `
-          <a href="${t.videoUrl}" target="_blank" rel="noopener" class="tutorial-video" style="text-decoration:none">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-          </a>` : `
-          <div class="tutorial-video">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
-          </div>`}
-        ${t.steps?.length ? `<div class="tutorial-steps">${t.steps.map((s,i) => `
-          <div class="tutorial-step"><span class="tutorial-step-num">${String(i+1).padStart(2,'0')}</span><span>${s}</span></div>`).join('')}
-        </div>` : ''}
+        <div class="tutorial-video">
+          <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+        </div>
       </div>`).join('');
   }
 
@@ -193,6 +204,88 @@
     v.addEventListener('click', () => showToast('Video tutorial coming soon', 'info'));
   });
   doneProgress();
+
+  // ===== TUTORIAL MODAL =====
+  let tutSwiper = null;
+
+  window.openTutorial = (id) => {
+    const t = allTutorials.find(x => x.id === id);
+    if (!t) return;
+
+    const modal = document.getElementById('tut-modal');
+    const body  = document.getElementById('tut-modal-body');
+
+    // Video section
+    let videoHtml = '';
+    if (t.videoUrl) {
+      const ytMatch = t.videoUrl.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|embed\/|shorts\/))([A-Za-z0-9_-]{11})/);
+      if (ytMatch) {
+        videoHtml = `<div class="tut-modal-video"><iframe src="https://www.youtube.com/embed/${ytMatch[1]}" frameborder="0" allowfullscreen allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"></iframe></div>`;
+      } else {
+        videoHtml = `<a href="${t.videoUrl}" target="_blank" rel="noopener" class="tut-modal-video-link">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polygon points="10 8 16 12 10 16 10 8"/></svg>
+          Watch video
+        </a>`;
+      }
+    }
+
+    // Steps as swiper slides
+    const stepsHtml = t.steps?.length ? `
+      <div class="tut-steps-label">Steps</div>
+      <div class="swiper tut-swiper">
+        <div class="swiper-wrapper">
+          ${t.steps.map((s, i) => `
+            <div class="swiper-slide">
+              <article class="tut-step-card-wrap">
+                <div class="tut-step-circle">${i + 1}</div>
+                <div class="tut-step-card">
+                  <h3 class="tut-step-title">Step ${i + 1}</h3>
+                  <p class="tut-step-desc">${s}</p>
+                </div>
+              </article>
+            </div>`).join('')}
+        </div>
+        <div class="swiper-pagination tut-swiper-pagination"></div>
+      </div>` : '';
+
+    body.innerHTML = `
+      <div class="tut-modal-cat">${(t.category||'').replace('-',' ')}</div>
+      <h2 class="tut-modal-title">${t.title||''}</h2>
+      <p class="tut-modal-desc">${t.description||''}</p>
+      ${videoHtml}
+      ${stepsHtml}
+    `;
+
+    modal.classList.add('open');
+    document.body.style.overflow = 'hidden';
+
+    // Init swiper after DOM is ready
+    if (t.steps?.length) {
+      tutSwiper?.destroy(true, true);
+      tutSwiper = new Swiper('.tut-swiper', {
+        slidesPerView: 1,
+        spaceBetween: 16,
+        autoHeight: true,
+        pagination: { el: '.tut-swiper-pagination', clickable: true },
+        breakpoints: { 560: { slidesPerView: 2 } }
+      });
+    }
+  };
+
+  window.closeTutorial = () => {
+    document.getElementById('tut-modal').classList.remove('open');
+    document.body.style.overflow = '';
+    tutSwiper?.destroy(true, true);
+    tutSwiper = null;
+  };
+
+  document.getElementById('tut-modal')?.addEventListener('click', e => {
+    if (e.target === e.currentTarget) window.closeTutorial();
+  });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') window.closeTutorial();
+  });
 </script>
 </body>
 </html>

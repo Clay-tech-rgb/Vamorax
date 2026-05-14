@@ -15,7 +15,7 @@
   <ul class="navbar-nav">
     <li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li>
     <li><a href="free-presets.html" class="active">Free</a></li>
-    <li><a href="tutorials.html">Tutorials</a></li><li><a href="contact.html">Contact</a></li>
+    <li><a href="tutorials.html">Tutorials</a></li><li><a href="edit-hub.html">Edit Hub</a></li><li><a href="membership.html">Membership</a></li><li><a href="contact.html">Contact</a></li>
   </ul>
   <div class="navbar-actions">
     
@@ -46,6 +46,8 @@
   <a href="shop.html">Shop</a>
   <a href="free-presets.html">Free Presets</a>
   <a href="tutorials.html">Tutorials</a>
+  <a href="edit-hub.html">Edit Hub</a>
+  <a href="membership.html">Membership</a>
   <a href="contact.html">Contact</a>
 </div>
 <div class="cart-overlay"></div>
@@ -59,12 +61,12 @@
 <div class="page-header">
   <span class="page-header-label">100% Free</span>
   <h1 class="page-header-title fade-up">Free presets</h1>
-  <p class="page-header-sub">Three premium presets at no cost. Sign in required to download.</p>
+  <p class="page-header-sub">Free presets available. Sign in required to download.</p>
 </div>
 
 <section class="section" style="padding-top:0">
   <div class="container">
-    <div style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:32px;font-size:13px;color:var(--text-2)">
+    <div id="auth-banner" style="display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);margin-bottom:32px;font-size:13px;color:var(--text-2)">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       A free account is required to download. No payment needed.
       <a href="login.html" class="btn btn-ghost btn-sm" style="margin-left:auto">Sign in</a>
@@ -78,7 +80,7 @@
     <hr class="divider" style="margin-bottom:48px" />
     <span class="section-label">Want more?</span>
     <h2 class="section-title" style="margin-bottom:12px">Browse all presets</h2>
-    <p class="section-sub" style="margin:0 auto 24px">All paid presets are just Rp 5.000.</p>
+    <p class="section-sub" style="margin:0 auto 24px">Browse all Alight Motion presets in the shop.</p>
     <a href="shop.html" class="btn btn-primary btn-lg">Browse shop</a>
   </div>
 </section>
@@ -91,6 +93,7 @@
   import { initCartSidebar } from './js/cart.js';
   import { fetchFreePresets, renderPresetCard, renderSkeletonCards } from './js/shop.js';
   import { updateNavAuth, isLoggedIn } from './js/auth.js';
+  import { auth, onAuthStateChanged } from './js/firebase-config.js';
   import { initNavPill } from './js/navbar.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
@@ -99,16 +102,71 @@
   startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill();
   initWaveBackground();
   setTimeout(() => document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible')), 80);
+
+  // Hide/show auth banner + lock overlay + action buttons based on login state
+  onAuthStateChanged(auth, user => {
+    const banner = document.getElementById('auth-banner');
+    if (banner) banner.style.display = user ? 'none' : 'flex';
+    document.querySelectorAll('.preset-card-lock').forEach(el => {
+      el.style.display = user ? 'none' : 'flex';
+    });
+    document.querySelectorAll('.free-preset-actions').forEach(el => {
+      el.style.visibility = user ? 'visible' : 'hidden';
+    });
+  });
+
+  function initWishlistBtns() {
+    const wishlist = JSON.parse(localStorage.getItem('wishlist') || '[]');
+    document.querySelectorAll('.wishlist-btn').forEach(btn => {
+      const id = btn.dataset.id;
+      if (wishlist.includes(id)) btn.classList.add('active');
+      // Remove old listeners by cloning
+      const fresh = btn.cloneNode(true);
+      btn.parentNode.replaceChild(fresh, btn);
+      fresh.addEventListener('click', () => {
+        const list = JSON.parse(localStorage.getItem('wishlist') || '[]');
+        const idx = list.indexOf(id);
+        if (idx === -1) { list.push(id); fresh.classList.add('active'); }
+        else { list.splice(idx, 1); fresh.classList.remove('active'); }
+        localStorage.setItem('wishlist', JSON.stringify(list));
+      });
+    });
+  }
+
   const freeGrid = document.getElementById('freeGrid');
   if (freeGrid) {
     freeGrid.innerHTML = renderSkeletonCards(3);
     fetchFreePresets().then(presets => {
-      freeGrid.innerHTML = presets.map(p => renderPresetCard(p)).join('');
+      freeGrid.innerHTML = presets.map(p => {
+        // Inject lock overlay into each card
+        const card = renderPresetCard(p);
+        return card.replace(
+          'class="wishlist-btn"',
+          `class="wishlist-btn" data-lock-sibling="true"`
+        ).replace(
+          '<div class="preset-card-media"',
+          `<div class="preset-card-lock" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);align-items:center;justify-content:center;border-radius:inherit;pointer-events:none;z-index:4">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          </div>
+          <div class="preset-card-media"`
+        );
+      }).join('');
+      initWishlistBtns();
+      // Apply lock + button state after render
+      onAuthStateChanged(auth, user => {
+        document.querySelectorAll('.preset-card-lock').forEach(el => {
+          el.style.display = user ? 'none' : 'flex';
+        });
+        document.querySelectorAll('.free-preset-actions').forEach(el => {
+          el.style.visibility = user ? 'visible' : 'hidden';
+        });
+      });
     });
   }
-  window.downloadFree = (id) => {
+
+  window.downloadFree = (id, url) => {
     if (!isLoggedIn()) { showToast('Please sign in to download', 'info'); setTimeout(() => window.location.href = 'login.html', 1200); return; }
-    showToast('Download starting', 'success');
+    if (url) { window.open(url, '_blank'); } else { showToast('Download starting', 'success'); }
   };
   window.addPresetToCart = () => {};
   doneProgress();

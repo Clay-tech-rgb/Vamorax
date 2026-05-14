@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>404 — Page Not Found | Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <style>
+    /* SVG filters */
+    svg[aria-hidden][height='0'] { position: fixed; }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; }
+
+    html, body {
+       display: grid;
+       display: grid;
+       display: grid;
+      min-height: 100%;
+    }
+
+    body {
+      place-content: center;
+      container-type: inline-size;
+      padding: .5em;
+      background: #0c0c0e;
+      font: clamp(.75em, 3vw + .5em, 1.5em) 'Inter', sans-serif;
+      text-align: center;
+      text-wrap: balance;
+      color: #f0f0f2;
+    }
+
+    body > :not([aria-hidden='true']) {
+      box-sizing: border-box;
+      padding: 1em;
+      border-radius: 1.5em;
+      background: #111114;
+      box-shadow: 2px 2px 24px rgba(0,0,0,0.6);
+      border: 1px solid rgba(255,255,255,0.08);
+    }
+
+    section {
+      display: grid;
+      grid-template: auto 1fr auto / auto 1fr auto;
+      width: min(30em, 100cqi);
+      aspect-ratio: 1;
+    }
+
+    .back, .shape {
+      display: grid;
+      grid-area: 1 / 1 / -1 / -1;
+      grid-template: subgrid / subgrid;
+    }
+
+    .back {
+      filter: url(#shape) url(#smooth);
+      pointer-events: none;
+    }
+
+    .back::before {
+      grid-area: inherit;
+      opacity: .55;
+      /* Logo Vamorax as background — tiled/centered on dark */
+      background:
+        radial-gradient(ellipse at 30% 40%, rgba(232,232,240,0.07) 0%, transparent 60%),
+        radial-gradient(ellipse at 70% 60%, rgba(232,232,240,0.04) 0%, transparent 55%),
+        #0c0c0e;
+      content: '';
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Logo SVG centered inside the frame */
+    .back-logo {
+      grid-area: 1 / 1 / -1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    .back-logo svg {
+      width: 40%;
+      height: 40%;
+      opacity: 0.18;
+      stroke: #f0f0f2;
+      fill: none;
+      stroke-width: 3;
+      stroke-linecap: round;
+    }
+
+    .shape {
+      outline: solid 1em #111114;
+      outline-offset: -1px;
+      filter: blur(.375em) url(#sharp);
+    }
+
+    .shape::before, .shape::after {
+      --i: 0;
+      --j: calc(1 - var(--i));
+      --o: 2em;
+      grid-area: calc(1 + 2*var(--i)) / calc(1 + 2*var(--i));
+      margin-inline: calc(-1*var(--i)*var(--o)) calc(-1*var(--j)*var(--o));
+      background: #111114;
+      clip-path: polygon(calc(var(--i)*var(--o)) 0, 100% 0, calc(100% - var(--j)*var(--o)) 100%, 0 100%);
+      content: '';
+    }
+
+    .shape::after { --i: 1; }
+
+    p {
+      grid-area: 3 / 3;
+      padding: .75em 1em;
+      font-size: .7em;
+      font-weight: 600;
+      letter-spacing: .5px;
+      color: rgba(240,240,242,0.7);
+      line-height: 1.5;
+      z-index: 2;
+    }
+
+    p strong {
+      display: block;
+      font-size: 1.6em;
+      font-weight: 700;
+      letter-spacing: -1px;
+      color: #f0f0f2;
+      margin-bottom: 2px;
+    }
+
+    a {
+      grid-area: 1 / 1;
+      padding: .75em 1em;
+      font-size: .65em;
+      font-weight: 600;
+      letter-spacing: .3px;
+      color: rgba(240,240,242,0.6);
+      text-decoration: none;
+      z-index: 2;
+      transition: color .2s ease;
+    }
+
+    a:hover { color: #f0f0f2; }
+  </style>
+</head>
+<body>
+
+<!-- SVG filter defs -->
+<svg aria-hidden="true" width="0" height="0">
+  <filter id="sharp">
+    <feComponentTransfer>
+      <feFuncA type="discrete" tableValues="0 1"/>
+    </feComponentTransfer>
+  </filter>
+  <filter id="shape">
+    <feComponentTransfer>
+      <feFuncA type="discrete" tableValues="0 1 0"/>
+    </feComponentTransfer>
+  </filter>
+  <filter id="smooth">
+    <feGaussianBlur stdDeviation="4"/>
+    <feComponentTransfer>
+      <feFuncA type="table" tableValues="-5 4"/>
+    </feComponentTransfer>
+    <feComposite in="SourceGraphic" operator="in"/>
+  </filter>
+</svg>
+
+<section>
+  <div class="back" aria-hidden="true">
+    <div class="back-logo">
+      <!-- Vamorax logo mark -->
+      <svg viewBox="0 0 100 100">
+        <path d="M25 30 Q50 60 75 30"/>
+        <path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/>
+      </svg>
+    </div>
+  </div>
+  <div class="shape" aria-hidden="true"></div>
+
+  <a href="index.html">← Home</a>
+  <p><strong>404</strong>Page not found</p>
+</section>
+
+</body>
+</html>

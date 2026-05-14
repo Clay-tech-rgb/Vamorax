@@ -1,6 +1,6 @@
 // ===== AUTHENTICATION — Firebase Auth =====
 import { showToast, showConfirm } from './ui.js';
-import { verifyRecaptcha, addHoneypot, isBot, clientRateLimit, disableConsoleInProd } from './security.js';
+import { isBot, clientRateLimit } from './security.js';
 import {
   auth, db, GoogleAuthProvider, signInWithPopup,
   createUserWithEmailAndPassword, signInWithEmailAndPassword,
@@ -8,19 +8,36 @@ import {
   doc, setDoc, getDoc, updateDoc
 } from './firebase-config.js';
 
-// ── Current user (sync, from Firebase cache) ──
-export function getCurrentUser() {
-  return auth.currentUser;
+// ── Current user ──
+export function getCurrentUser() { return auth.currentUser; }
+export function isLoggedIn() { return !!auth.currentUser; }
+
+// ── Membership helpers ──
+export async function getMembership(uid) {
+  const cached = localStorage.getItem('vmx_membership');
+  if (cached) return cached;
+  try {
+    const snap = await getDoc(doc(db, 'users', uid));
+    const tier = snap.exists() ? (snap.data().membership || 'free') : 'free';
+    localStorage.setItem('vmx_membership', tier);
+    return tier;
+  } catch { return 'free'; }
 }
 
-export function isLoggedIn() {
-  return !!auth.currentUser;
+export async function setMembership(uid, tier) {
+  localStorage.setItem('vmx_membership', tier);
+  try { await updateDoc(doc(db, 'users', uid), { membership: tier }); } catch {}
+}
+
+export function getCachedMembership() {
+  return localStorage.getItem('vmx_membership') || 'free';
 }
 
 // ── Logout ──
 export function logout() {
   showConfirm('Are you sure you want to sign out?', async () => {
     await signOut(auth);
+    localStorage.removeItem('vmx_membership');
     showToast('Signed out', 'info');
     setTimeout(() => window.location.href = 'index.html', 800);
   });
@@ -35,14 +52,9 @@ export function requireAuth(redirectTo = 'login.html') {
         localStorage.setItem('auth_redirect', window.location.href);
         window.location.href = redirectTo;
         resolve(false);
-      } else if (!user.emailVerified) {
-        // Google users are auto-verified, only block email/password unverified
-        if (user.providerData?.[0]?.providerId === 'password') {
-          window.location.href = 'verify-email.html';
-          resolve(false);
-        } else {
-          resolve(true);
-        }
+      } else if (!user.emailVerified && user.providerData?.[0]?.providerId === 'password') {
+        window.location.href = 'verify-email.html';
+        resolve(false);
       } else {
         resolve(true);
       }
@@ -53,15 +65,11 @@ export function requireAuth(redirectTo = 'login.html') {
 // ── Update navbar based on auth state ──
 export function updateNavAuth() {
   onAuthStateChanged(auth, user => {
-    const loginBtns = document.querySelectorAll('.nav-login-btn');
-    const userMenus = document.querySelectorAll('.nav-user-menu');
-    if (user) {
-      loginBtns.forEach(el => el.classList.add('hidden'));
-      userMenus.forEach(el => el.classList.remove('hidden'));
-    } else {
-      loginBtns.forEach(el => el.classList.remove('hidden'));
-      userMenus.forEach(el => el.classList.add('hidden'));
-    }
+    document.querySelectorAll('.nav-login-btn').forEach(el =>
+      el.classList.toggle('hidden', !!user));
+    document.querySelectorAll('.nav-user-menu').forEach(el =>
+      el.classList.toggle('hidden', !user));
+    if (user) getMembership(user.uid);
   });
 }
 
@@ -76,10 +84,16 @@ async function saveUserToFirestore(user) {
       displayName: user.displayName || user.email.split('@')[0],
       photoURL: user.photoURL || '',
       createdAt: new Date().toISOString(),
+      membership: 'free',
       purchasedPresets: [],
       downloadedFreePresets: []
     });
+    localStorage.setItem('vmx_membership', 'free');
+    return true; // new user
   }
+  const tier = snap.data().membership || 'free';
+  localStorage.setItem('vmx_membership', tier);
+  return false;
 }
 
 // ── Login page logic ──
@@ -87,17 +101,14 @@ export function initLoginPage() {
   const emailForm    = document.querySelector('#email-login-form');
   const registerForm = document.querySelector('#register-form');
 
-  // Email/password sign in
+  // Sign in
   emailForm?.addEventListener('submit', async e => {
     e.preventDefault();
     const email    = emailForm.querySelector('[name="email"]').value.trim();
     const password = emailForm.querySelector('[name="password"]').value;
     const btn      = emailForm.querySelector('button[type="submit"]');
 
-    // Honeypot check
     if (isBot(emailForm)) return;
-
-    // Client-side rate limit: 5 attempts per minute
     if (!clientRateLimit('login', 5, 60_000)) {
       showToast('Too many attempts. Wait a minute.', 'error'); return;
     }
@@ -106,38 +117,23 @@ export function initLoginPage() {
     btn.innerHTML = '<span class="spinner"></span> Signing in...';
     try {
       await signInWithEmailAndPassword(auth, email, password);
-      // If not verified, redirect to verify page (don't block login)
       if (!auth.currentUser?.emailVerified) {
         showToast('Please verify your email first.', 'info');
         setTimeout(() => window.location.href = 'verify-email.html', 900);
         return;
       }
       showToast('Welcome back!', 'success');
-      // Check if user came back to resend verification
-      if (localStorage.getItem('resend_verify') === '1' && !auth.currentUser?.emailVerified) {
-        localStorage.removeItem('resend_verify');
-        const actionCodeSettings = {
-          url: window.location.origin + '/auth-handler.html',
-          handleCodeInApp: false,
-        };
-        try { await sendEmailVerification(auth.currentUser, actionCodeSettings); } catch {}
-        await signOut(auth);
-        window.location.href = 'verify-email.html';
-        return;
-      }
       const raw = localStorage.getItem('auth_redirect') || '';
       const redirect = raw && raw.startsWith(window.location.origin) && !raw.includes('login')
         ? raw : 'dashboard.html';
       localStorage.removeItem('auth_redirect');
       setTimeout(() => window.location.href = redirect, 900);
     } catch (err) {
-      const msg = err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password'
-        ? 'Wrong email or password.'
-        : err.code === 'auth/user-not-found'
-        ? 'No account found with this email.'
-        : err.code === 'auth/too-many-requests'
-        ? 'Too many attempts. Try again later.'
-        : 'Sign in failed. Please try again.';
+      const msg =
+        err.code === 'auth/invalid-credential' || err.code === 'auth/wrong-password' ? 'Wrong email or password.' :
+        err.code === 'auth/user-not-found' ? 'No account found with this email.' :
+        err.code === 'auth/too-many-requests' ? 'Too many attempts. Try again later.' :
+        'Sign in failed. Please try again.';
       showToast(msg, 'error');
       btn.disabled = false;
       btn.textContent = 'Sign in';
@@ -154,11 +150,7 @@ export function initLoginPage() {
 
     if (password !== confirm) { showToast('Passwords do not match', 'error'); return; }
     if (captcha && !captcha.checked) { showToast('Please verify you are not a robot', 'error'); return; }
-
-    // Honeypot check
     if (isBot(registerForm)) return;
-
-    // Client-side rate limit
     if (!clientRateLimit('register', 3, 300_000)) {
       showToast('Too many registrations. Try again later.', 'error'); return;
     }
@@ -170,21 +162,16 @@ export function initLoginPage() {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await updateProfile(cred.user, { displayName: email.split('@')[0] });
       await saveUserToFirestore(cred.user);
-      // Send verification email BEFORE signing out
-      const actionCodeSettings = {
-        url: window.location.origin + '/auth-handler.html',
-        handleCodeInApp: false,
-      };
+      const actionCodeSettings = { url: window.location.origin + '/auth-handler.html', handleCodeInApp: false };
       await sendEmailVerification(cred.user, actionCodeSettings);
       showToast('Account created! Check your email to verify.', 'success');
-      // Do NOT sign out — keep user logged in so verify-email page can poll
+      localStorage.setItem('vmx_new_user', '1');
       window.location.href = 'verify-email.html';
     } catch (err) {
-      const msg = err.code === 'auth/email-already-in-use'
-        ? 'Email already registered. Try signing in.'
-        : err.code === 'auth/weak-password'
-        ? 'Password must be at least 6 characters.'
-        : 'Registration failed. Please try again.';
+      const msg =
+        err.code === 'auth/email-already-in-use' ? 'Email already registered. Try signing in.' :
+        err.code === 'auth/weak-password' ? 'Password must be at least 6 characters.' :
+        'Registration failed. Please try again.';
       showToast(msg, 'error');
       btn.disabled = false;
       btn.textContent = 'Create account';
@@ -197,11 +184,16 @@ export async function signInWithGoogle() {
   try {
     const provider = new GoogleAuthProvider();
     const cred = await signInWithPopup(auth, provider);
-    await saveUserToFirestore(cred.user);
+    const isNew = await saveUserToFirestore(cred.user);
     showToast(`Welcome, ${cred.user.displayName || 'there'}!`, 'success');
-    const raw2 = localStorage.getItem('auth_redirect') || '';
-    const redirect = raw2 && raw2.startsWith(window.location.origin) && !raw2.includes('login')
-      ? raw2 : 'dashboard.html';
+    if (isNew) {
+      localStorage.setItem('vmx_new_user', '1');
+      setTimeout(() => window.location.href = 'membership.html', 900);
+      return;
+    }
+    const raw = localStorage.getItem('auth_redirect') || '';
+    const redirect = raw && raw.startsWith(window.location.origin) && !raw.includes('login')
+      ? raw : 'dashboard.html';
     localStorage.removeItem('auth_redirect');
     setTimeout(() => window.location.href = redirect, 900);
   } catch (err) {
@@ -217,8 +209,6 @@ export async function initDashboard() {
   if (!authed) return;
 
   const user = auth.currentUser;
-
-  // Try to get extra data from Firestore
   let userData = {};
   try {
     const snap = await getDoc(doc(db, 'users', user.uid));
@@ -231,9 +221,19 @@ export async function initDashboard() {
   if (emailEl) emailEl.textContent = user.email;
   if (nameEl)  nameEl.textContent  = displayName;
 
+  // Membership badge
+  const tier = userData.membership || 'free';
+  localStorage.setItem('vmx_membership', tier);
+  const badge = document.getElementById('dashboard-membership-badge');
+  if (badge) {
+    badge.textContent = tier === 'pro' ? 'Elite Pass' : 'Free';
+    badge.style.cssText = tier === 'pro'
+      ? 'display:inline-flex;padding:2px 10px;background:var(--text);color:var(--bg);border-radius:999px;font-size:10px;font-weight:700;letter-spacing:0.5px;text-transform:uppercase'
+      : 'display:inline-flex;padding:2px 10px;background:var(--surface);color:var(--text-3);border:1px solid var(--border);border-radius:999px;font-size:10px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase';
+  }
+
   document.querySelector('.logout-btn')?.addEventListener('click', logout);
 
-  // Settings prefill
   const settingsName  = document.getElementById('settings-name');
   const settingsEmail = document.getElementById('settings-email');
   const settingsSave  = document.getElementById('settings-save');

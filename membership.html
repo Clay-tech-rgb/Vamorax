@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" /><link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Membership — Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script>history.replaceState(null,'','/membership')</script>
+</head>
+<body>
+<div id="top-progress"></div>
+<div class="page-ambient"><div class="ambient-orb ambient-orb-a"></div><div class="ambient-orb ambient-orb-b"></div></div>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><svg viewBox="0 0 100 100"><path d="M25 30 Q50 60 75 30"/><path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/></svg></a>
+  <div class="navbar-actions">
+    <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
+    <a href="index.html" class="btn btn-ghost btn-sm">← Back</a>
+  </div>
+</nav>
+
+<div class="page-content">
+<div class="membership-page">
+  <div class="membership-wrap">
+
+    <div class="membership-header">
+      <div class="membership-eyebrow">Choose your plan</div>
+      <h1 class="membership-title fade-up">Unlock your full potential</h1>
+      <p class="membership-sub">Mulai gratis atau langsung masuk ke level pro.<br>Semua preset, semua aset, semua ilmu — dalam satu paket.</p>
+    </div>
+
+    <div class="membership-cards">
+
+      <!-- FREE / STARTER -->
+      <div class="membership-card" id="card-free">
+        <div class="membership-card-badge membership-card-badge--free">Free</div>
+        <div class="membership-card-name">Starter</div>
+        <div class="membership-card-title">The Hobbyist</div>
+        <div class="membership-card-price">Rp 0</div>
+        <div class="membership-card-price-sub">Selamanya gratis</div>
+        <p class="membership-card-desc">"Cocok buat lo yang baru mau mulai nyelam ke dunia editing. Dapet akses ke semua preset yang pernah gue share di YouTube dalam satu folder rapi."</p>
+        <div class="membership-features">
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>Limited Vault</strong> — preset YouTube</span>
+          </div>
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            <span>Community Support</span>
+          </div>
+          <div class="membership-feature membership-feature--locked">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span>Exclusive assets &amp; project files</span>
+          </div>
+          <div class="membership-feature membership-feature--locked">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span>The Blueprint &amp; Technical Edge</span>
+          </div>
+          <div class="membership-feature membership-feature--locked">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            <span>Private SFX &amp; Overlay</span>
+          </div>
+        </div>
+        <!-- Intentionally not a big button — psychological nudge -->
+      </div>
+
+      <!-- PRO / ELITE PASS -->
+      <div class="membership-card membership-card--pro" id="card-pro">
+        <div class="membership-card-badge membership-card-badge--pro">Best Value</div>
+        <div class="membership-card-name">Vamorax Elite Pass</div>
+        <div class="membership-card-title">The Professional</div>
+        <div class="membership-card-price">Rp 20.000</div>
+        <div class="membership-card-price-sub">Akses seumur hidup</div>
+        <p class="membership-card-desc">"Bukan cuma preset, ini adalah 'otak' di balik konten Vamorax. Lo dapet semua aset eksklusif, file mentah project gue buat dipelajari, sampe settingan teknis biar kualitas video lo naik kelas tanpa ribet."</p>
+        <div class="membership-features">
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>Full Vault</strong> — semua preset + aset eksklusif</span>
+          </div>
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>The Blueprint</strong> — bedah file project asli</span>
+          </div>
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>Technical Edge</strong> — OBS &amp; Networking anti-lag</span>
+          </div>
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>Private Asset</strong> — SFX &amp; Overlay eksklusif</span>
+          </div>
+          <div class="membership-feature">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="color:var(--text)"><polyline points="20 6 9 17 4 12"/></svg>
+            <span><strong>Priority Support</strong> — langsung ke creator</span>
+          </div>
+        </div>
+        <button class="btn btn-primary" id="btn-get-pro" style="width:100%;justify-content:center;font-size:14px;padding:13px">
+          Gabung Elite Pass — Rp 20.000
+        </button>
+      </div>
+
+    </div>
+
+    <!-- Free nudge link -->
+    <div class="membership-free-link" id="btn-stay-free">
+      I'll stay with the basic version for now
+    </div>
+
+  </div>
+</div>
+
+<footer class="footer"><div class="footer-bottom"><span>© 2025 Vamorax</span><span>Made for creators</span></div></footer>
+</div><!-- /page-content -->
+
+<script type="module">
+  import { initTheme, toggleTheme, startProgress, doneProgress, showToast, initScrollReveal, initSmoothScroll, initMobileNav } from './js/ui.js';
+  import { initCartSidebar } from './js/cart.js';
+  import { updateNavAuth } from './js/auth.js';
+  import { initNavPill } from './js/navbar.js';
+  import { auth, onAuthStateChanged, db, doc, updateDoc } from './js/firebase-config.js';
+  import { setMembership } from './js/auth.js';
+  import { initPageTransition } from './js/transition.js';
+  import { initWaveBackground } from './js/animations.js';
+
+  window.toggleTheme = toggleTheme;
+  initPageTransition();
+  startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill(); initWaveBackground();
+  setTimeout(() => document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible')), 80);
+  doneProgress();
+
+  // Auth guard — redirect to login if not logged in
+  onAuthStateChanged(auth, user => {
+    if (!user) {
+      localStorage.setItem('auth_redirect', window.location.href);
+      window.location.href = 'login.html';
+      return;
+    }
+
+    // If already pro, redirect to dashboard
+    const cached = localStorage.getItem('vmx_membership');
+    if (cached === 'pro') {
+      window.location.href = 'dashboard.html';
+      return;
+    }
+
+    // Get Elite Pass → go to payment
+    document.getElementById('btn-get-pro')?.addEventListener('click', () => {
+      // Store pending membership upgrade in localStorage for payment page to pick up
+      localStorage.setItem('vmx_pending_membership', JSON.stringify({
+        tier: 'pro',
+        amount: 20000,
+        orderId: 'MBR-' + Date.now(),
+        uid: user.uid,
+      }));
+      window.location.href = 'payment-qris.html?type=membership';
+    });
+
+    // Stay free → set free membership explicitly and go to dashboard/home
+    document.getElementById('btn-stay-free')?.addEventListener('click', async () => {
+      await setMembership(user.uid, 'free');
+      localStorage.removeItem('vmx_new_user');
+      showToast('Welcome to Vamorax!', 'success');
+      setTimeout(() => window.location.href = 'index.html', 800);
+    });
+  });
+</script>
+</body>
+</html>

@@ -33,43 +33,33 @@ export function initFloatingCards() {
 }
 
 // ===== CHAR-BY-CHAR TEXT REVEAL =====
-// Each character slides up from below + fades in, staggered per char
 export function initCharReveal(selector = '.char-reveal') {
   const els = document.querySelectorAll(selector);
   if (!els.length) return;
-
   els.forEach(el => {
     if (el.dataset.charReady) return;
     el.dataset.charReady = '1';
-
     const text = el.textContent;
     el.textContent = '';
-
     [...text].forEach(ch => {
       const span = document.createElement('span');
-      if (ch === ' ') {
-        span.className = 'char char-space';
-      } else {
-        span.className = 'char';
-        span.textContent = ch;
-      }
+      if (ch === ' ') { span.className = 'char char-space'; }
+      else { span.className = 'char'; span.textContent = ch; }
       el.appendChild(span);
     });
   });
 }
 
-// Trigger char reveal animation with stagger
 export function triggerCharReveal(el, baseDelay = 0) {
   if (!el) return;
-  const chars = el.querySelectorAll('.char:not(.char-space)');
-  chars.forEach((ch, i) => {
+  el.querySelectorAll('.char:not(.char-space)').forEach((ch, i) => {
     ch.style.transitionDelay = `${baseDelay + i * 40}ms`;
   });
   el.classList.add('visible');
 }
 
 // ===== ANIMATED WAVE BACKGROUND =====
-// Multi-layer gradient waves: blue→cyan on left, orange→yellow on right
+// Optimized: throttled to ~24fps, paused when tab hidden, uses will-change
 export function initWaveBackground() {
   let bg = document.querySelector('.wave-bg');
   if (!bg) {
@@ -84,43 +74,60 @@ export function initWaveBackground() {
     bg.appendChild(canvas);
   }
 
-  const ctx = canvas.getContext('2d');
+  // Promote to own compositor layer
+  canvas.style.willChange = 'transform';
+
+  const ctx = canvas.getContext('2d', { alpha: true });
 
   function resize() {
-    canvas.width  = window.innerWidth;
-    canvas.height = window.innerHeight;
+    // Cap resolution — no need for full DPR on background canvas
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+    canvas.width  = Math.round(window.innerWidth  * dpr);
+    canvas.height = Math.round(window.innerHeight * dpr);
+    canvas.style.width  = window.innerWidth  + 'px';
+    canvas.style.height = window.innerHeight + 'px';
+    ctx.scale(dpr, dpr);
   }
   resize();
-  window.addEventListener('resize', resize, { passive: true });
 
-  // Each wave: yBase (0–1), amplitude, frequency, phase speed, lineWidth, opacity, vertical bob speed/amount
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(resize, 200);
+  }, { passive: true });
+
+  // Reduced to 6 waves (was 8) — fewer draw calls
   const waves = [
-    // Blue-cyan family (left-dominant)
-    { yBase:0.62, amp:55, freq:0.0016, spd:0.55, lw:2.2, op:0.38, bobSpd:0.28, bobAmp:18, colorL:'#1a6fff', colorR:'#00d4ff' },
-    { yBase:0.68, amp:40, freq:0.0022, spd:0.80, lw:1.4, op:0.22, bobSpd:0.40, bobAmp:12, colorL:'#0099ff', colorR:'#00eeff' },
-    { yBase:0.74, amp:65, freq:0.0012, spd:0.38, lw:3.0, op:0.18, bobSpd:0.18, bobAmp:22, colorL:'#0055cc', colorR:'#00bbff' },
-    { yBase:0.58, amp:30, freq:0.0030, spd:1.10, lw:1.0, op:0.15, bobSpd:0.55, bobAmp: 8, colorL:'#44aaff', colorR:'#aaf0ff' },
-    // Orange-yellow family (right-dominant)
-    { yBase:0.70, amp:50, freq:0.0018, spd:0.65, lw:2.0, op:0.35, bobSpd:0.32, bobAmp:16, colorL:'#ff6600', colorR:'#ffcc00' },
-    { yBase:0.76, amp:38, freq:0.0025, spd:0.90, lw:1.3, op:0.20, bobSpd:0.45, bobAmp:10, colorL:'#ff4400', colorR:'#ffee44' },
-    { yBase:0.65, amp:60, freq:0.0014, spd:0.42, lw:2.6, op:0.16, bobSpd:0.22, bobAmp:20, colorL:'#cc3300', colorR:'#ffaa00' },
-    { yBase:0.80, amp:28, freq:0.0032, spd:1.20, lw:0.9, op:0.13, bobSpd:0.60, bobAmp: 7, colorL:'#ff8833', colorR:'#ffe066' },
+    { yBase:0.62, amp:50, freq:0.0016, spd:0.55, lw:2.0, op:0.35, bobSpd:0.28, bobAmp:16, colorL:'#1a6fff', colorR:'#00d4ff' },
+    { yBase:0.68, amp:38, freq:0.0022, spd:0.80, lw:1.3, op:0.20, bobSpd:0.40, bobAmp:10, colorL:'#0099ff', colorR:'#00eeff' },
+    { yBase:0.74, amp:60, freq:0.0012, spd:0.38, lw:2.6, op:0.16, bobSpd:0.18, bobAmp:20, colorL:'#0055cc', colorR:'#00bbff' },
+    { yBase:0.70, amp:48, freq:0.0018, spd:0.65, lw:1.8, op:0.32, bobSpd:0.32, bobAmp:14, colorL:'#ff6600', colorR:'#ffcc00' },
+    { yBase:0.76, amp:36, freq:0.0025, spd:0.90, lw:1.2, op:0.18, bobSpd:0.45, bobAmp: 9, colorL:'#ff4400', colorR:'#ffee44' },
+    { yBase:0.65, amp:55, freq:0.0014, spd:0.42, lw:2.3, op:0.14, bobSpd:0.22, bobAmp:18, colorL:'#cc3300', colorR:'#ffaa00' },
   ];
 
   let t = 0;
   let raf;
+  let lastFrame = 0;
+  const TARGET_FPS = 24;
+  const FRAME_MS   = 1000 / TARGET_FPS;
 
-  function draw() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    const W = canvas.width;
-    const H = canvas.height;
+  function draw(now) {
+    raf = requestAnimationFrame(draw);
+
+    // Throttle to TARGET_FPS
+    if (now - lastFrame < FRAME_MS) return;
+    lastFrame = now;
+
+    const W = window.innerWidth;
+    const H = window.innerHeight;
+
+    ctx.clearRect(0, 0, W, H);
 
     waves.forEach(w => {
-      // Vertical bob offset
-      const bob = Math.sin(t * w.bobSpd * 0.04) * w.bobAmp;
+      const bob     = Math.sin(t * w.bobSpd * 0.04) * w.bobAmp;
       const yCenter = H * w.yBase + bob;
 
-      // Horizontal gradient: colorL on left, colorR on right
       const grad = ctx.createLinearGradient(0, 0, W, 0);
       grad.addColorStop(0,   hexAlpha(w.colorL, w.op));
       grad.addColorStop(0.5, hexAlpha(blend(w.colorL, w.colorR, 0.5), w.op * 0.7));
@@ -131,7 +138,8 @@ export function initWaveBackground() {
       ctx.lineWidth   = w.lw;
       ctx.lineCap     = 'round';
 
-      for (let x = 0; x <= W; x += 2) {
+      // Step 4px instead of 2px — half the path points
+      for (let x = 0; x <= W; x += 4) {
         const y = yCenter
           + Math.sin(x * w.freq + t * w.spd * 0.05) * w.amp
           + Math.sin(x * w.freq * 1.8 + t * w.spd * 0.03 + 1.2) * (w.amp * 0.35);
@@ -141,10 +149,20 @@ export function initWaveBackground() {
     });
 
     t++;
-    raf = requestAnimationFrame(draw);
   }
 
-  draw();
+  raf = requestAnimationFrame(draw);
+
+  // Pause when tab is hidden — saves CPU/GPU entirely
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(raf);
+    } else {
+      lastFrame = 0;
+      raf = requestAnimationFrame(draw);
+    }
+  });
+
   return () => cancelAnimationFrame(raf);
 }
 

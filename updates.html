@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" /><link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Updates — Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script>history.replaceState(null,'','/updates')</script>
+</head>
+<body>
+<div id="top-progress"></div>
+<div class="page-ambient"><div class="ambient-orb ambient-orb-a"></div><div class="ambient-orb ambient-orb-b"></div></div>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><svg viewBox="0 0 100 100"><path d="M25 30 Q50 60 75 30"/><path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/></svg></a>
+  <ul class="navbar-nav">
+    <li><a href="index.html">Home</a></li>
+    <li><a href="shop.html">Shop</a></li>
+    <li><a href="free-presets.html">Free</a></li>
+    <li><a href="tutorials.html">Tutorials</a></li>
+    <li><a href="edit-hub.html">Edit Hub</a></li>
+    <li><a href="membership.html">Membership</a></li>
+    <li><a href="updates.html" class="active">Updates</a></li>
+    <li><a href="contact.html">Contact</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
+    <button class="icon-btn cart-btn"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="cart-badge">0</span></button>
+    <a href="login.html" class="btn btn-primary btn-sm nav-login-btn">Sign in</a>
+    <div class="nav-user-menu hidden"><a href="dashboard.html" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a></div>
+  </div>
+  <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.add('open')"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-nav">
+  <button class="mobile-nav-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="mobile-nav-icons">
+    <button class="mobile-nav-icon-btn cart-btn" title="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </button>
+    <a href="login.html" class="mobile-nav-icon-btn nav-login-btn" title="Sign in">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <div class="mobile-nav-icon-btn nav-user-menu hidden">
+      <a href="dashboard.html" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+  </div>
+  <a href="index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="free-presets.html">Free Presets</a>
+  <a href="tutorials.html">Tutorials</a>
+  <a href="edit-hub.html">Edit Hub</a>
+  <a href="membership.html">Membership</a>
+  <a href="updates.html">Updates</a>
+  <a href="contact.html">Contact</a>
+</div>
+<div class="cart-overlay"></div>
+<div class="cart-sidebar">
+  <div class="cart-header"><span class="cart-title">Cart</span><button class="icon-btn cart-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="cart-items"></div>
+  <div class="cart-footer"><div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-price">Rp 0</span></div><button class="btn btn-primary w-full cart-checkout-btn">Checkout</button></div>
+</div>
+
+<div class="page-content">
+<div class="page-header">
+  <span class="page-header-label">Changelog</span>
+  <h1 class="page-header-title fade-up">Updates</h1>
+  <p class="page-header-sub">Semua yang baru di Vamorax — preset, fitur, dan perbaikan.</p>
+</div>
+
+<section class="section" style="padding-top:0">
+  <div class="container" style="max-width:680px">
+    <div class="updates-list" id="updatesList">
+      <!-- Populated by JS from Firestore or fallback static -->
+    </div>
+  </div>
+</section>
+
+<footer class="footer"><div class="footer-bottom"><span>© 2025 Vamorax</span><span>Made for creators</span></div></footer>
+</div><!-- /page-content -->
+
+<script type="module">
+  import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav } from './js/ui.js';
+  import { initCartSidebar } from './js/cart.js';
+  import { updateNavAuth } from './js/auth.js';
+  import { initNavPill, markUpdatesRead } from './js/navbar.js';
+  import { initPageTransition } from './js/transition.js';
+  import { initWaveBackground } from './js/animations.js';
+  import { db, collection, getDocs } from './js/firebase-config.js';
+
+  window.toggleTheme = toggleTheme;
+  initPageTransition();
+  startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill(); initWaveBackground();
+  setTimeout(() => document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible')), 80);
+
+  // Mark as read — dot hilang setelah halaman ini dibuka
+  markUpdatesRead();
+
+  // Static fallback updates — admin bisa override via Firestore 'updates' collection
+  const STATIC_UPDATES = [
+    {
+      id: '2025-05-14',
+      date: '14 Mei 2025',
+      tag: 'new',
+      tagLabel: 'New',
+      title: 'Membership System — Starter & Elite Pass',
+      desc: 'Sistem membership baru diluncurkan. Pilih antara paket Starter (gratis) atau Elite Pass (Rp 20.000) untuk akses penuh ke semua preset eksklusif, The Blueprint, Technical Edge, dan Private Asset.',
+    },
+    {
+      id: '2025-05-13',
+      date: '13 Mei 2025',
+      tag: 'new',
+      tagLabel: 'New',
+      title: 'Edit Hub — Image Degrader & 3 Quick Tools Baru',
+      desc: 'Ditambahkan Image Degrader (efek low quality), Frame to Timecode Converter, Aspect Ratio Calculator, dan Color Contrast Checker ke Edit Hub.',
+    },
+    {
+      id: '2025-05-12',
+      date: '12 Mei 2025',
+      tag: 'update',
+      tagLabel: 'Update',
+      title: 'Payment — GoPay, DANA, SeaBank',
+      desc: 'Halaman pembayaran diperbarui dengan pilihan metode: QRIS, GoPay, DANA, dan SeaBank. Tampilan lebih bersih dan informatif.',
+    },
+    {
+      id: '2025-05-10',
+      date: '10 Mei 2025',
+      tag: 'fix',
+      tagLabel: 'Fix',
+      title: 'Dashboard Settings — Bug Toast Ganda',
+      desc: 'Diperbaiki bug di halaman dashboard settings yang menampilkan dua toast sekaligus ("Settings saved" dan "Failed to save") saat menyimpan perubahan.',
+    },
+    {
+      id: '2025-05-08',
+      date: '8 Mei 2025',
+      tag: 'preset',
+      tagLabel: 'Preset',
+      title: 'Bitrate Calculator — FPS Baru & Info Cards',
+      desc: 'Ditambahkan pilihan 25fps, 50fps, dan 120fps (khusus 4K). Setiap pilihan resolusi, FPS, dan kualitas sekarang menampilkan info card dengan penjelasan kapan sebaiknya digunakan.',
+    },
+  ];
+
+  async function loadUpdates() {
+    const list = document.getElementById('updatesList');
+    let updates = STATIC_UPDATES;
+
+    // Try Firestore
+    try {
+      const snap = await getDocs(collection(db, 'updates'));
+      if (!snap.empty) {
+        updates = snap.docs.map(d => ({ id: d.id, ...d.data() }))
+          .sort((a, b) => b.id.localeCompare(a.id));
+      }
+    } catch {}
+
+    list.innerHTML = updates.map(u => `
+      <div class="update-item">
+        <div class="update-date">${u.date || u.id}</div>
+        <div class="update-content">
+          <span class="update-tag update-tag--${u.tag || 'update'}">${u.tagLabel || u.tag || 'Update'}</span>
+          <div class="update-title">${u.title}</div>
+          <div class="update-desc">${u.desc}</div>
+        </div>
+      </div>`).join('');
+
+    doneProgress();
+  }
+
+  loadUpdates();
+</script>
+</body>
+</html>

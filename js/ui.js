@@ -75,12 +75,25 @@ export function initTheme() {
   updateThemeIcon(saved);
 }
 export function toggleTheme() {
-  const cur = document.documentElement.getAttribute('data-theme');
+  const cur  = document.documentElement.getAttribute('data-theme');
   const next = cur === 'dark' ? 'light' : 'dark';
-  document.documentElement.setAttribute('data-theme', next);
-  localStorage.setItem('theme', next);
-  updateThemeIcon(next);
-  document.dispatchEvent(new CustomEvent('themechange', { detail: { theme: next } }));
+
+  const apply = () => {
+    document.documentElement.setAttribute('data-theme', next);
+    localStorage.setItem('theme', next);
+    updateThemeIcon(next);
+    document.dispatchEvent(new CustomEvent('themechange', { detail: { theme: next } }));
+  };
+
+  // View Transition API — smooth circular wipe (Chrome 111+)
+  if (document.startViewTransition) {
+    document.startViewTransition(apply);
+  } else {
+    // Fallback: flash transition via CSS class
+    document.documentElement.classList.add('theme-transitioning');
+    apply();
+    setTimeout(() => document.documentElement.classList.remove('theme-transitioning'), 300);
+  }
 }
 function updateThemeIcon(theme) {
   const btn = document.querySelector('.theme-toggle');
@@ -106,22 +119,18 @@ export function initScrollReveal() {
   document.querySelectorAll('.fade-up, .reveal-text').forEach(el => io.observe(el));
 }
 
-// ===== SMOOTH SCROLL WITH EASING =====
+// ===== SMOOTH SCROLL =====
+// Menggunakan native CSS scroll-behavior — lebih smooth karena jalan di compositor thread
+// Custom JS scroll (requestAnimationFrame + window.scrollTo) dihapus karena menyebabkan glitch
 export function initSmoothScroll() {
-  let current = window.scrollY;
-  let target  = window.scrollY;
-  let raf;
-  const ease = 0.1;
-
-  // Returns true if any overlay/panel that should block page scroll is open
+  // Hanya lock scroll saat panel overlay terbuka
   function isPageScrollLocked() {
     return !!(
       document.querySelector('.cart-sidebar.open') ||
-      document.querySelector('.mobile-nav.open')
+      document.querySelector('.vmx-drawer.open')
     );
   }
 
-  // Find scrollable ancestor that can still scroll in the given direction
   function getScrollableAncestor(el, deltaY) {
     while (el && el !== document.body) {
       const oy = window.getComputedStyle(el).overflowY;
@@ -138,30 +147,11 @@ export function initSmoothScroll() {
   }
 
   window.addEventListener('wheel', e => {
-    // Always block page scroll when a panel is open
     if (isPageScrollLocked()) {
-      // Only allow scroll inside the open panel's scrollable children
       const scrollable = getScrollableAncestor(e.target, e.deltaY);
       if (!scrollable) e.preventDefault();
-      return;
     }
-
-    // Normal page — allow scrollable children to scroll independently
-    const scrollable = getScrollableAncestor(e.target, e.deltaY);
-    if (scrollable) return;
-
-    e.preventDefault();
-    target += e.deltaY * 0.9;
-    target = Math.max(0, Math.min(target, document.body.scrollHeight - window.innerHeight));
-    if (!raf) animate();
   }, { passive: false });
-
-  function animate() {
-    current += (target - current) * ease;
-    if (Math.abs(target - current) < 0.5) { current = target; raf = null; window.scrollTo(0, current); return; }
-    window.scrollTo(0, current);
-    raf = requestAnimationFrame(animate);
-  }
 }
 
 // ===== MOBILE NAV =====
@@ -215,6 +205,9 @@ export function initLiveChat() {
   if (!btn || !win) return;
 
   btn.addEventListener('click', () => win.classList.toggle('open'));
+
+  // Prevent page scroll when wheel is inside the live chat window
+  win.addEventListener('wheel', e => e.stopPropagation(), { passive: true });
 
   const QA = [
     { q: 'How do I get a free preset?',      a: 'Create a free account, then go to the Free Presets page and click Download.' },
@@ -276,4 +269,6 @@ export function trackRecentlyViewed(id) {
   localStorage.setItem('recentlyViewed', JSON.stringify([id, ...r.filter(x => x !== id)].slice(0, 10)));
 }
 export function getRecentlyViewed() { return JSON.parse(localStorage.getItem('recentlyViewed') || '[]'); }
+
+
 

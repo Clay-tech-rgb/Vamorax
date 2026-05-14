@@ -1,0 +1,2736 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" /><link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tools — Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script>history.replaceState(null,'','/edit-hub')</script>
+  <style>
+    /* ===== EDIT HUB — TOOL TABS ===== */
+    /* ===== HUB TABS — panah di luar track, tidak overlap ===== */
+    .hub-tabs-wrap {
+      display: flex; align-items: center; gap: 8px;
+      margin-bottom: 36px;
+    }
+    /* Track container — flex:1 biar panah di luar */
+    .hub-tabs-track {
+      position: relative; flex: 1; min-width: 0;
+    }
+    /* Fade gradient di ujung kanan track */
+    .hub-tabs-track::after {
+      content: '';
+      position: absolute; top: 0; right: 0; bottom: 0;
+      width: 32px;
+      background: linear-gradient(to right, transparent, var(--bg));
+      pointer-events: none; z-index: 2;
+    }
+    /* Arrow buttons — di luar track, tidak overlap sama sekali */
+    .hub-tabs-arrow {
+      flex-shrink: 0;
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--bg-2); border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; color: var(--text-2);
+      transition: background var(--transition), color var(--transition), opacity .2s;
+      opacity: 0; pointer-events: none; box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .hub-tabs-arrow:hover { background: var(--bg-3); color: var(--text); }
+    .hub-tabs-arrow.visible { opacity: 1; pointer-events: all; }
+    .hub-tabs-arrow svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2.5; stroke-linecap: round; stroke-linejoin: round; }
+    .hub-tabs {
+      display: flex; gap: 6px;
+      overflow-x: auto; overflow-y: hidden;
+      scrollbar-width: none; padding-bottom: 2px;
+    }
+    .hub-tabs::-webkit-scrollbar { display: none; }
+    .hub-tab {
+      flex-shrink: 0;
+      padding: 8px 16px;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.2px;
+      color: var(--text-3);
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.15s, background 0.15s, border-color 0.15s, box-shadow 0.15s;
+      position: relative;
+    }
+    .hub-tab:hover {
+      color: var(--text-2);
+      background: var(--bg-3);
+      border-color: var(--border-strong);
+    }
+    .hub-tab.active {
+      color: var(--text);
+      background: var(--bg-3);
+      border-color: var(--border-strong);
+      box-shadow: inset 0 -2px 0 var(--text);
+    }
+
+    /* Mobile dropdown */
+    .hub-dropdown { display: none; position: relative; margin-bottom: 32px; }
+    .hub-dropdown-btn {
+      width: 100%; display: flex; align-items: center; justify-content: space-between;
+      padding: 11px 16px; font-size: 13px; font-weight: 600;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); color: var(--text-2);
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .hub-dropdown-btn:hover { border-color: var(--border-strong); background: var(--bg-3); }
+    .hub-dropdown-btn svg {
+      width: 14px; height: 14px; stroke: currentColor; fill: none;
+      stroke-width: 2; stroke-linecap: round; stroke-linejoin: round;
+      transition: transform 0.2s ease; flex-shrink: 0;
+    }
+    .hub-dropdown.open .hub-dropdown-btn svg { transform: rotate(180deg); }
+    .hub-dropdown-list {
+      position: absolute; top: calc(100% + 4px); left: 0; right: 0;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius-md); z-index: 50;
+      max-height: 0; opacity: 0; overflow: hidden; pointer-events: none;
+      transition: max-height 0.28s cubic-bezier(0.4,0,0.2,1), opacity 0.2s ease;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.2);
+    }
+    .hub-dropdown.open .hub-dropdown-list { max-height: 400px; opacity: 1; pointer-events: all; }
+    .hub-dropdown-item {
+      display: flex; align-items: center; gap: 8px;
+      width: 100%; padding: 12px 16px; text-align: left;
+      font-size: 13px; font-weight: 500; color: var(--text-2);
+      border-bottom: 1px solid var(--border); background: none;
+      transition: background var(--transition), color var(--transition);
+    }
+    .hub-dropdown-item:last-child { border-bottom: none; }
+    .hub-dropdown-item:hover { background: var(--surface-hover); color: var(--text); }
+    .hub-dropdown-item.active {
+      color: var(--text); background: var(--surface);
+      font-weight: 600;
+    }
+    .hub-dropdown-item.active::before {
+      content: '';
+      display: inline-block; width: 3px; height: 14px;
+      background: var(--text); border-radius: 2px;
+      flex-shrink: 0;
+    }
+
+    @media (max-width: 640px) {
+      /* Di HP: sembunyikan tab bar — user akses tools via hamburger menu drawer */
+      .hub-tabs-wrap { display: none; }
+      .hub-dropdown { display: none; }
+    }
+    @keyframes dl-spin { to { transform: rotate(360deg); } }
+    @media (max-width: 560px) {
+      .dl2-result-grid { grid-template-columns: 1fr !important; }
+    }
+    /* Hide native number input spinners */
+    input[type=number]::-webkit-inner-spin-button,
+    input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    input[type=number] { -moz-appearance: textfield; appearance: textfield; }
+
+    /* ===== TOOL PANELS ===== */
+    .tool-panel { display: none; }
+    .tool-panel.active { display: block; }
+
+    /* ===== TOOL CARD WRAPPER ===== */
+    .tool-card {
+      background: var(--bg-2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px;
+      max-width: 760px;
+    }
+    .tool-card-title {
+      font-size: 16px; font-weight: 700; letter-spacing: -0.3px;
+      margin-bottom: 6px;
+    }
+    .tool-card-desc {
+      font-size: 13px; color: var(--text-2); line-height: 1.6;
+      margin-bottom: 28px;
+    }
+
+    /* ===== TOOL 1 — COLOR PALETTE ===== */
+    .palette-upload-area {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-md);
+      padding: 36px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      margin-bottom: 16px;
+      position: relative;
+    }
+    .palette-upload-area:hover { border-color: var(--text-3); background: var(--surface); }
+    .palette-upload-area.drag-over { border-color: var(--text-2); background: var(--surface-hover); }
+    .palette-upload-icon {
+      width: 40px; height: 40px; margin: 0 auto 12px;
+      background: var(--bg-3); border-radius: var(--radius);
+      display: flex; align-items: center; justify-content: center;
+    }
+    .palette-upload-icon svg { width: 18px; height: 18px; stroke: var(--text-3); fill: none; stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round; }
+    .palette-upload-label { font-size: 13px; color: var(--text-2); margin-bottom: 4px; }
+    .palette-upload-sub { font-size: 11px; color: var(--text-3); }
+    #palette-file-input { display: none; }
+
+    .palette-url-row {
+      display: flex; gap: 8px; margin-bottom: 24px;
+    }
+    .palette-url-row .form-input { flex: 1; }
+
+    .palette-preview {
+      width: 100%; max-height: 200px; object-fit: contain;
+      border-radius: var(--radius); border: 1px solid var(--border);
+      margin-bottom: 20px; display: none;
+    }
+    #palette-canvas { display: none; }
+
+    .palette-swatches {
+      display: flex; flex-wrap: wrap; gap: 10px;
+    }
+    .palette-swatch {
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      cursor: pointer;
+    }
+    .palette-swatch-color {
+      width: 56px; height: 56px; border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .palette-swatch:hover .palette-swatch-color {
+      transform: scale(1.08);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    }
+    .palette-swatch-hex {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.5px;
+      color: var(--text-3); font-family: monospace;
+    }
+    .palette-empty {
+      font-size: 13px; color: var(--text-3); text-align: center;
+      padding: 24px 0;
+    }
+
+    /* ===== BITRATE PILL BUTTONS ===== */
+    .bitrate-pill-group {
+      display: flex; flex-wrap: wrap; gap: 6px;
+      margin-bottom: 6px;
+    }
+    .bitrate-pill {
+      padding: 7px 14px; font-size: 12px; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+      white-space: nowrap; line-height: 1;
+    }
+    .bitrate-pill:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
+    .bitrate-pill.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .bitrate-pill:disabled, .bitrate-pill[disabled], .bitrate-pill.disabled {
+      opacity: 0.35; cursor: not-allowed; pointer-events: none;
+    }
+    .bitrate-section-label {
+      font-size: 10px; font-weight: 700; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-3);
+      margin-bottom: 8px; margin-top: 20px;
+    }
+    .bitrate-section-label:first-child { margin-top: 0; }
+    .bitrate-info-card {
+      margin-bottom: 20px; padding: 12px 16px;
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-md); font-size: 12px;
+      color: var(--text-2); line-height: 1.7;
+      display: none;
+    }
+    .bitrate-info-card.visible { display: block; }
+    .bitrate-info-card strong { color: var(--text); }
+    .bitrate-info-tag {
+      display: inline-block; padding: 2px 8px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: 999px; font-size: 10px; font-weight: 600;
+      color: var(--text-3); margin-right: 4px; margin-bottom: 4px;
+      letter-spacing: 0.3px;
+    }
+    .bitrate-result {
+      background: var(--bg-3);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 24px;
+      display: flex; gap: 24px; flex-wrap: wrap;
+    }
+    .bitrate-result-item { flex: 1; min-width: 120px; }
+    .bitrate-result-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 6px;
+    }
+    .bitrate-result-value {
+      font-size: 28px; font-weight: 700; letter-spacing: -1px; color: var(--text);
+    }
+    .bitrate-result-unit {
+      font-size: 13px; color: var(--text-2); margin-top: 2px;
+    }
+
+    /* ===== TOOL 3 — WAVEFORM ===== */
+    .waveform-upload {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-md); padding: 36px 24px;
+      text-align: center; cursor: pointer;
+      transition: border-color var(--transition), background var(--transition);
+      margin-bottom: 20px;
+    }
+    .waveform-upload:hover { border-color: var(--text-3); background: var(--surface); }
+    .waveform-upload.drag-over { border-color: var(--text-2); background: var(--surface-hover); }
+    #waveform-file-input { display: none; }
+    #waveform-canvas {
+      width: 100%; border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      display: none; margin-bottom: 16px;
+      background: var(--bg-3);
+    }
+    .waveform-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .waveform-options { display: flex; align-items: center; gap: 16px; margin-bottom: 16px; flex-wrap: wrap; }
+    .waveform-color-row { display: flex; align-items: center; gap: 8px; }
+    .waveform-color-label { font-size: 11px; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; color: var(--text-3); }
+    .waveform-color-swatch { position: relative; width: 28px; height: 28px; border-radius: var(--radius); border: 1.5px solid var(--border); cursor: pointer; overflow: hidden; transition: border-color .15s, transform .15s; }
+    .waveform-color-swatch:hover { border-color: var(--border-strong); transform: scale(1.1); }
+    .waveform-color-swatch input[type="color"] { position: absolute; inset: -4px; width: calc(100% + 8px); height: calc(100% + 8px); opacity: 0; cursor: pointer; border: none; padding: 0; }
+    .waveform-color-preview { display: block; width: 100%; height: 100%; pointer-events: none; }
+    .waveform-preset-colors { display: flex; gap: 5px; }
+    .waveform-preset-dot { width: 20px; height: 20px; border-radius: 50%; cursor: pointer; border: 1.5px solid transparent; transition: transform .12s, border-color .12s; }
+    .waveform-preset-dot:hover { transform: scale(1.2); }
+    .waveform-preset-dot.active { border-color: var(--text); }
+
+    /* ===== RESPONSIVE ===== */
+    /* ===== TOOL 4 — TEXT DECORATOR ===== */
+    .decorator-input-row {
+      display: flex; gap: 8px; margin-bottom: 24px;
+    }
+    .decorator-input-row .form-input { flex: 1; }
+    .decorator-styles-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+      gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--border);
+      margin-bottom: 28px;
+    }
+    .decorator-style-item {
+      background: var(--bg-2);
+      padding: 14px 16px;
+      display: flex; align-items: center; justify-content: space-between; gap: 10px;
+      transition: background var(--transition);
+    }
+    .decorator-style-item:hover { background: var(--bg-3); }
+    .decorator-style-label {
+      font-size: 10px; font-weight: 600; letter-spacing: 0.8px;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 4px;
+    }
+    .decorator-style-preview {
+      font-size: 14px; color: var(--text); line-height: 1.3;
+      word-break: break-all;
+    }
+    .decorator-copy-btn {
+      flex-shrink: 0; padding: 5px 10px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 11px; font-weight: 500;
+      color: var(--text-2);
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .decorator-copy-btn:hover { background: var(--surface-hover); color: var(--text); border-color: var(--border-strong); }
+
+    .symbols-section-title {
+      font-size: 11px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 14px;
+    }
+    .symbols-category { margin-bottom: 24px; }
+    .symbols-grid {
+      display: flex; flex-wrap: wrap; gap: 6px;
+    }
+    .symbol-btn {
+      width: 36px; height: 36px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 16px;
+      display: flex; align-items: center; justify-content: center;
+      cursor: pointer; transition: background var(--transition), border-color var(--transition), transform 0.12s ease;
+      color: var(--text);
+    }
+    .symbol-btn:hover { background: var(--surface-hover); border-color: var(--border-strong); transform: scale(1.15); }
+    .symbol-btn:active { transform: scale(0.95); }
+
+    /* ===== TOOL 5 — ASPECT RATIO ===== */
+    .ratio-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+      gap: 1px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      background: var(--border);
+    }
+    .ratio-card {
+      background: var(--bg-2);
+      padding: 20px;
+      transition: background var(--transition);
+    }
+    .ratio-card:hover { background: var(--bg-3); }
+    .ratio-platform {
+      font-size: 10px; font-weight: 600; letter-spacing: 1px;
+      text-transform: uppercase; color: var(--text-3); margin-bottom: 8px;
+    }
+    .ratio-name {
+      font-size: 15px; font-weight: 700; letter-spacing: -0.3px;
+      margin-bottom: 12px;
+    }
+    .ratio-visual {
+      margin-bottom: 14px; display: flex; align-items: flex-end; gap: 8px;
+    }
+    .ratio-box {
+      background: var(--bg-3); border: 1px solid var(--border-strong);
+      border-radius: 4px; flex-shrink: 0;
+    }
+    .ratio-details { display: flex; flex-direction: column; gap: 5px; }
+    .ratio-detail-row {
+      display: flex; justify-content: space-between; align-items: baseline;
+      font-size: 12px;
+    }
+    .ratio-detail-key { color: var(--text-3); }
+    .ratio-detail-val { font-weight: 600; color: var(--text); font-size: 12px; }
+
+    /* ===== COLOR CONTRAST — STYLED COLOR INPUT ===== */
+    .cc-color-label {
+      position: relative; display: inline-block;
+      width: 40px; height: 36px; flex-shrink: 0; cursor: pointer;
+    }
+    .cc-color-input {
+      position: absolute; inset: 0; opacity: 0;
+      width: 100%; height: 100%; cursor: pointer;
+      border: none; padding: 0;
+    }
+    .cc-color-preview {
+      display: block; width: 40px; height: 36px;
+      border-radius: var(--radius); border: 1.5px solid var(--border);
+      transition: border-color .15s, transform .15s;
+      pointer-events: none;
+    }
+    .cc-color-label:hover .cc-color-preview {
+      border-color: var(--border-strong); transform: scale(1.08);
+    }
+    /* Image drop zone */
+    .cc-img-drop {
+      border: 1.5px dashed var(--border-strong);
+      border-radius: var(--radius-md); padding: 20px 16px;
+      text-align: center; cursor: pointer;
+      display: flex; align-items: center; justify-content: center; gap: 10px;
+      font-size: 13px; color: var(--text-2);
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .cc-img-drop:hover { border-color: var(--text-3); background: var(--surface); }
+    .cc-img-drop.drag-over { border-color: var(--text-2); background: var(--surface-hover); }
+    @media (max-width: 768px) {
+
+      .tool-card { padding: 20px; }
+      .bitrate-grid { grid-template-columns: 1fr; }
+      .decorator-styles-grid { grid-template-columns: 1fr; }
+      .blur-controls-grid { grid-template-columns: 1fr !important; }
+      .blur-preview-grid { grid-template-columns: 1fr !important; }
+    }
+    @media (max-width: 480px) {
+      .palette-url-row { flex-direction: column; }
+      .waveform-actions { flex-direction: column; }
+      .decorator-input-row { flex-direction: column; }
+    }
+
+    /* ===== IMAGE CONVERTER ===== */
+    .conv-fmt {
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .conv-fmt:hover { background: var(--surface-hover); color: var(--text); }
+    .conv-fmt.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+
+    /* ===== IMAGE BLUR FORMAT BUTTONS ===== */
+    .blur-fmt {
+      padding: 5px 14px; font-size: 12px; font-weight: 600;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition), border-color var(--transition);
+    }
+    .blur-fmt:hover { background: var(--surface-hover); color: var(--text); }
+    .blur-fmt.active { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .conv-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 14px;
+      background: var(--bg-3); border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      animation: ci-in 0.3s cubic-bezier(0.34,1.2,0.64,1) both;
+    }
+    @keyframes ci-in { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:translateY(0); } }
+    .conv-thumb {
+      width: 44px; height: 44px; border-radius: var(--radius);
+      object-fit: cover; flex-shrink: 0;
+      border: 1px solid var(--border);
+    }
+    .conv-info { flex: 1; min-width: 0; }
+    .conv-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+    .conv-meta { font-size: 11px; color: var(--text-3); }
+    .conv-dl-btn {
+      flex-shrink: 0; padding: 6px 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius); font-size: 12px; font-weight: 600;
+      color: var(--text-2); cursor: pointer;
+      transition: background var(--transition), color var(--transition);
+      display: flex; align-items: center; gap: 5px;
+    }
+    .conv-dl-btn:hover { background: var(--surface-hover); color: var(--text); }
+    .conv-dl-btn.ready { background: var(--text); color: var(--bg); border-color: var(--text); }
+    .conv-drop-hover { border-color: var(--text-2) !important; background: var(--surface) !important; }
+  </style>
+</head>
+<body>
+<div id="top-progress"></div>
+<div class="page-ambient"><div class="ambient-orb ambient-orb-a"></div><div class="ambient-orb ambient-orb-b"></div></div>
+
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><svg viewBox="0 0 100 100"><path d="M25 30 Q50 60 75 30"/><path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/></svg></a>
+  <ul class="navbar-nav">
+    <li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li>
+    <li><a href="free-presets.html">Free</a></li><li><a href="tutorials.html">Tutorials</a></li><li><a href="edit-hub.html" class="active">Edit Hub</a></li><li><a href="membership.html">Membership</a></li><li><a href="contact.html">Contact</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
+    <button class="icon-btn cart-btn"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="cart-badge">0</span></button>
+    <a href="login.html" class="btn btn-primary btn-sm nav-login-btn">Sign in</a>
+    <div class="nav-user-menu hidden"><a href="dashboard.html" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a></div>
+  </div>
+  <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.add('open')"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-nav">
+  <button class="mobile-nav-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="mobile-nav-icons">
+    <button class="mobile-nav-icon-btn cart-btn" title="Cart">
+      <svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+      <span class="cart-badge">0</span>
+    </button>
+    <a href="login.html" class="mobile-nav-icon-btn nav-login-btn" title="Sign in">
+      <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+    </a>
+    <div class="mobile-nav-icon-btn nav-user-menu hidden">
+      <a href="dashboard.html" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%">
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+      </a>
+    </div>
+  </div>
+  <a href="index.html">Home</a>
+  <a href="shop.html">Shop</a>
+  <a href="free-presets.html">Free Presets</a>
+  <a href="tutorials.html">Tutorials</a>
+  <a href="edit-hub.html">Edit Hub</a>
+  <a href="membership.html">Membership</a>
+  <a href="contact.html">Contact</a>
+</div>
+<div class="cart-overlay"></div>
+<div class="cart-sidebar">
+  <div class="cart-header"><span class="cart-title">Cart</span><button class="icon-btn cart-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="cart-items"></div>
+  <div class="cart-footer"><div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-price">Rp 0</span></div><button class="btn btn-primary w-full cart-checkout-btn">Checkout</button></div>
+</div>
+
+<div class="page-content">
+<div class="page-header">
+  <span class="page-header-label">Creator Tools</span>
+  <h1 class="page-header-title fade-up">Tools</h1>
+  <p class="page-header-sub">Free tools built for video editors. No sign-in, no uploads to servers — everything runs in your browser.</p>
+</div>
+
+<section class="section" style="padding-top:0">
+  <div class="container">
+
+    <!-- Mobile dropdown tab switcher -->
+    <div class="hub-dropdown" id="hubDropdown">
+      <button class="hub-dropdown-btn" id="hubDropdownBtn">
+        <span id="hubDropdownLabel">Color Palette</span>
+        <svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg>
+      </button>
+      <div class="hub-dropdown-list">
+        <button class="hub-dropdown-item active" data-tab="palette">Color Palette</button>
+        <button class="hub-dropdown-item" data-tab="bitrate">Bitrate Calc</button>
+        <button class="hub-dropdown-item" data-tab="waveform">Waveform</button>
+        <button class="hub-dropdown-item" data-tab="decorator">Text Decorator</button>
+        <button class="hub-dropdown-item" data-tab="ratio">Aspect Ratio</button>
+        <button class="hub-dropdown-item" data-tab="converter">Image Converter</button>
+        <button class="hub-dropdown-item" data-tab="blur">Image Degrader</button>
+        <button class="hub-dropdown-item" data-tab="frametc">Frame → Timecode</button>
+        <button class="hub-dropdown-item" data-tab="aratio">Aspect Ratio Calc</button>
+        <button class="hub-dropdown-item" data-tab="contrast">Color Contrast</button>
+        <button class="hub-dropdown-item" data-tab="downloader">Media Downloader</button>
+      </div>
+    </div>
+
+    <!-- Desktop tab switcher -->
+    <div class="hub-tabs-wrap">
+      <button class="hub-tabs-arrow" id="hubTabsLeft" aria-label="Scroll left">
+        <svg viewBox="0 0 24 24"><polyline points="15 18 9 12 15 6"/></svg>
+      </button>
+      <div class="hub-tabs-track">
+        <div class="hub-tabs" id="hubTabs" role="tablist">
+        <button class="hub-tab active" data-tab="palette" role="tab">Color Palette</button>
+        <button class="hub-tab" data-tab="bitrate" role="tab">Bitrate Calc</button>
+        <button class="hub-tab" data-tab="waveform" role="tab">Waveform</button>
+        <button class="hub-tab" data-tab="decorator" role="tab">Text Decorator</button>
+        <button class="hub-tab" data-tab="ratio" role="tab">Aspect Ratio</button>
+        <button class="hub-tab" data-tab="converter" role="tab">Image Converter</button>
+        <button class="hub-tab" data-tab="blur" role="tab">Image Degrader</button>
+        <button class="hub-tab" data-tab="frametc" role="tab">Frame → Timecode</button>
+        <button class="hub-tab" data-tab="aratio" role="tab">Aspect Ratio Calc</button>
+        <button class="hub-tab" data-tab="contrast" role="tab">Color Contrast</button>
+        <button class="hub-tab" data-tab="downloader" role="tab">Media Downloader</button>
+      </div>
+      </div><!-- /hub-tabs-track -->
+      <button class="hub-tabs-arrow visible" id="hubTabsRight" aria-label="Scroll right">
+        <svg viewBox="0 0 24 24"><polyline points="9 18 15 12 9 6"/></svg>
+      </button>
+    </div>
+
+    <!-- ===== TOOL 1: COLOR PALETTE GENERATOR ===== -->
+    <div class="tool-panel active" id="panel-palette">
+      <div class="tool-card">
+        <div class="tool-card-title">Color Palette Generator</div>
+        <div class="tool-card-desc">Upload an image or paste a URL to extract dominant colors. Click any swatch to copy its hex code.</div>
+
+        <div class="palette-upload-area" id="paletteDropZone">
+          <div class="palette-upload-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div class="palette-upload-label">Drop an image here or <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById('palette-file-input').click()">browse</span></div>
+          <div class="palette-upload-sub">PNG, JPG, WEBP supported</div>
+          <input type="file" id="palette-file-input" accept="image/*" />
+        </div>
+
+        <div class="palette-url-row">
+          <input class="form-input" type="url" id="palette-url-input" placeholder="Or paste an image URL…" />
+          <button class="btn btn-ghost" id="palette-url-btn">Load</button>
+        </div>
+
+        <img id="palette-preview" class="palette-preview" alt="Preview" crossorigin="anonymous" />
+        <canvas id="palette-canvas"></canvas>
+
+        <div id="palette-swatches" class="palette-swatches">
+          <div class="palette-empty">Upload or paste an image URL to generate a palette.</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 2: VIDEO BITRATE CALCULATOR ===== -->
+    <div class="tool-panel" id="panel-bitrate">
+      <div class="tool-card">
+        <div class="tool-card-title">Video Bitrate Calculator</div>
+        <div class="tool-card-desc">Pilih resolusi, frame rate, dan kualitas untuk mendapatkan rekomendasi bitrate dan estimasi ukuran file.</div>
+
+        <!-- Resolution -->
+        <div class="bitrate-section-label">Resolusi</div>
+        <div class="bitrate-pill-group" id="bitrate-res-group">
+          <button class="bitrate-pill" data-res="720">720p</button>
+          <button class="bitrate-pill active" data-res="1080">1080p</button>
+          <button class="bitrate-pill" data-res="1440">1440p / 2K</button>
+          <button class="bitrate-pill" data-res="2160">4K</button>
+          <button class="bitrate-pill" data-res="2160-120">4K 120fps</button>
+        </div>
+
+        <!-- Resolution info card -->
+        <div class="bitrate-info-card" id="bitrate-res-info"></div>
+
+        <!-- FPS -->
+        <div class="bitrate-section-label">Frame Rate</div>
+        <div class="bitrate-pill-group" id="bitrate-fps-group">
+          <button class="bitrate-pill" data-fps="24">24 fps</button>
+          <button class="bitrate-pill" data-fps="25">25 fps</button>
+          <button class="bitrate-pill active" data-fps="30">30 fps</button>
+          <button class="bitrate-pill" data-fps="50">50 fps</button>
+          <button class="bitrate-pill" data-fps="60">60 fps</button>
+          <button class="bitrate-pill" data-fps="120" id="fps-120-btn">120 fps</button>
+        </div>
+
+        <!-- FPS info card -->
+        <div class="bitrate-info-card" id="bitrate-fps-info"></div>
+
+        <!-- Quality -->
+        <div class="bitrate-section-label">Kualitas</div>
+        <div class="bitrate-pill-group" id="bitrate-quality-group">
+          <button class="bitrate-pill" data-quality="low">Low</button>
+          <button class="bitrate-pill active" data-quality="medium">Medium</button>
+          <button class="bitrate-pill" data-quality="high">High</button>
+        </div>
+
+        <!-- Quality info card -->
+        <div class="bitrate-info-card" id="bitrate-quality-info"></div>
+
+        <div class="bitrate-result" id="bitrate-result" style="margin-top:24px">
+          <div class="bitrate-result-item">
+            <div class="bitrate-result-label">Recommended Bitrate</div>
+            <div class="bitrate-result-value" id="bitrate-mbps">—</div>
+            <div class="bitrate-result-unit">Mbps (video)</div>
+          </div>
+          <div class="bitrate-result-item">
+            <div class="bitrate-result-label">Est. File Size / min</div>
+            <div class="bitrate-result-value" id="bitrate-size">—</div>
+            <div class="bitrate-result-unit" id="bitrate-size-unit">MB per minute</div>
+          </div>
+          <div class="bitrate-result-item">
+            <div class="bitrate-result-label">Audio Bitrate</div>
+            <div class="bitrate-result-value" id="bitrate-audio">—</div>
+            <div class="bitrate-result-unit">kbps (AAC)</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 3: AUDIO WAVEFORM VISUALIZER ===== -->
+    <div class="tool-panel" id="panel-waveform">
+      <div class="tool-card">
+        <div class="tool-card-title">Audio Waveform Visualizer</div>
+        <div class="tool-card-desc">Upload an audio file to generate a static waveform visualization you can download as PNG.</div>
+
+        <div class="waveform-upload" id="waveformDropZone">
+          <div class="palette-upload-icon" style="margin:0 auto 12px">
+            <svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+          </div>
+          <div class="palette-upload-label">Drop an audio file here or <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById('waveform-file-input').click()">browse</span></div>
+          <div class="palette-upload-sub">MP3, WAV, OGG, M4A, FLAC supported</div>
+          <input type="file" id="waveform-file-input" accept="audio/*" />
+        </div>
+
+        <!-- Color options -->
+        <div class="waveform-options" id="waveform-options" style="display:none">
+          <div class="waveform-color-row">
+            <span class="waveform-color-label">Warna</span>
+            <label class="waveform-color-swatch" title="Pilih warna waveform">
+              <input type="color" id="waveform-color-input" value="#ffffff" />
+              <span class="waveform-color-preview" id="waveform-color-preview" style="background:#ffffff"></span>
+            </label>
+          </div>
+          <div class="waveform-preset-colors" id="waveform-presets">
+            <!-- populated by JS -->
+          </div>
+        </div>
+
+        <canvas id="waveform-canvas" height="140"></canvas>
+
+        <div class="waveform-actions" id="waveform-actions" style="display:none">
+          <button class="btn btn-primary" id="waveform-download-btn">
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download PNG
+          </button>
+          <button class="btn btn-ghost" id="waveform-reset-btn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 4: TEXT DECORATOR ===== -->
+    <div class="tool-panel" id="panel-decorator">
+      <div class="tool-card" style="max-width:900px">
+        <div class="tool-card-title">Text Decorator</div>
+        <div class="tool-card-desc">Type your text and copy it in any Unicode style. Click a symbol to copy it instantly.</div>
+
+        <div class="decorator-input-row">
+          <input class="form-input" type="text" id="decorator-input" placeholder="Type your text here…" maxlength="80" />
+          <button class="btn btn-ghost" id="decorator-clear-btn">Clear</button>
+        </div>
+
+        <div class="decorator-styles-grid" id="decorator-styles-grid">
+          <!-- populated by JS -->
+        </div>
+
+        <div class="symbols-category">
+          <div class="symbols-section-title">Arrows</div>
+          <div class="symbols-grid" id="symbols-arrows"></div>
+        </div>
+        <div class="symbols-category">
+          <div class="symbols-section-title">Stars &amp; Sparkles</div>
+          <div class="symbols-grid" id="symbols-stars"></div>
+        </div>
+        <div class="symbols-category">
+          <div class="symbols-section-title">Shapes &amp; Misc</div>
+          <div class="symbols-grid" id="symbols-shapes"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 5: ASPECT RATIO HELPER ===== -->
+    <div class="tool-panel" id="panel-ratio">
+      <div class="tool-card" style="max-width:900px">
+        <div class="tool-card-title">Aspect Ratio Helper</div>
+        <div class="tool-card-desc">Platform presets for common video formats — resolution, ratio, and recommended frame rates at a glance.</div>
+        <div class="ratio-grid" id="ratio-grid">
+          <!-- populated by JS -->
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 7: PEMBURIKAN GAMBAR ===== -->
+    <div class="tool-panel" id="panel-blur">
+      <div class="tool-card" style="max-width:800px">
+        <div class="tool-card-title">Image Degrader</div>
+        <div class="tool-card-desc">Buat gambar terlihat low quality — atur kualitas kompresi, ukuran pixel, brightness, contrast, dan grayscale. Semua realtime, diproses di browser.</div>
+
+        <!-- Drop zone -->
+        <div class="palette-upload-area" id="blur-drop-zone">
+          <div class="palette-upload-icon">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div class="palette-upload-label">Seret &amp; lepas gambar di sini atau <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById('blur-file-input').click()">pilih file</span></div>
+          <div class="palette-upload-sub">JPG, PNG, WebP didukung (maks. 10MB)</div>
+          <input type="file" id="blur-file-input" accept="image/*" style="display:none" />
+        </div>
+
+        <!-- Controls — hidden until image loaded -->
+        <div id="blur-controls" style="display:none">
+
+          <!-- Sliders -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px" class="blur-controls-grid">
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Kualitas</span><span id="blur-quality-val" style="color:var(--text);font-weight:700">50%</span>
+              </label>
+              <input type="range" id="blur-quality" min="1" max="100" value="50" style="width:100%;accent-color:var(--text)" />
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">Makin kecil = makin burik (kompresi JPEG)</div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Ukuran Pixel</span><span id="blur-pixel-val" style="color:var(--text);font-weight:700">1px</span>
+              </label>
+              <input type="range" id="blur-pixel" min="1" max="32" value="1" style="width:100%;accent-color:var(--text)" />
+              <div style="font-size:10px;color:var(--text-3);margin-top:4px">Efek pixelate — makin besar = makin kotak</div>
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Brightness</span><span id="blur-brightness-val" style="color:var(--text);font-weight:700">100%</span>
+              </label>
+              <input type="range" id="blur-brightness" min="0" max="200" value="100" style="width:100%;accent-color:var(--text)" />
+            </div>
+
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label" style="display:flex;justify-content:space-between">
+                <span>Contrast</span><span id="blur-contrast-val" style="color:var(--text);font-weight:700">100%</span>
+              </label>
+              <input type="range" id="blur-contrast" min="0" max="200" value="100" style="width:100%;accent-color:var(--text)" />
+            </div>
+
+            <div class="form-group" style="margin-bottom:0;display:flex;align-items:center;gap:10px;padding-top:18px">
+              <input type="checkbox" id="blur-grayscale" style="width:16px;height:16px;accent-color:var(--text);cursor:pointer" />
+              <label for="blur-grayscale" class="form-label" style="margin-bottom:0;cursor:pointer">Grayscale</label>
+            </div>
+
+          </div>
+
+          <!-- Format -->
+          <div style="display:flex;align-items:center;gap:10px;margin-bottom:24px;flex-wrap:wrap">
+            <span class="form-label" style="margin-bottom:0;white-space:nowrap">Format output</span>
+            <div style="display:flex;gap:6px" id="blur-fmt-btns">
+              <button class="blur-fmt active" data-fmt="jpeg">JPEG</button>
+              <button class="blur-fmt" data-fmt="png">PNG</button>
+              <button class="blur-fmt" data-fmt="webp">WebP</button>
+            </div>
+          </div>
+
+          <!-- Preview -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px" class="blur-preview-grid">
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Original</div>
+              <img id="blur-preview-orig" style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border);display:block" alt="Original" />
+              <div id="blur-size-orig" style="font-size:11px;color:var(--text-3);margin-top:6px">0 KB</div>
+            </div>
+            <div>
+              <div style="font-size:11px;font-weight:600;letter-spacing:0.8px;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Hasil</div>
+              <img id="blur-preview-out" style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border);display:block" alt="Hasil" />
+              <div id="blur-size-out" style="font-size:11px;color:var(--text-3);margin-top:6px">0 KB</div>
+            </div>
+          </div>
+
+          <!-- Actions -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <button class="btn btn-primary" id="blur-download-btn">
+              <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              Unduh Hasil
+            </button>
+            <button class="btn btn-ghost" id="blur-reset-btn">Reset</button>
+          </div>
+
+        </div><!-- /blur-controls -->
+      </div>
+    </div>
+
+    <!-- ===== TOOL 6: IMAGE CONVERTER ===== -->
+    <div class="tool-panel" id="panel-converter">
+      <div class="tool-card" style="max-width:760px">
+        <div class="tool-card-title">Image Converter</div>
+        <div class="tool-card-desc">Upload images and convert to PNG, JPG, WEBP, or BMP — runs entirely in your browser, nothing sent to any server.</div>
+        <div id="conv-drop" style="border:1.5px dashed var(--border-strong);border-radius:var(--radius-md);padding:36px 24px;text-align:center;cursor:pointer;transition:border-color var(--transition),background var(--transition);margin-bottom:20px">
+          <div style="width:40px;height:40px;margin:0 auto 12px;background:var(--bg-3);border-radius:var(--radius);display:flex;align-items:center;justify-content:center">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--text-3)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+          </div>
+          <div style="font-size:13px;color:var(--text-2);margin-bottom:4px">Drop images here or <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById('conv-input').click()">browse</span></div>
+          <div style="font-size:11px;color:var(--text-3)">PNG, JPG, WEBP, BMP, GIF supported</div>
+          <input type="file" id="conv-input" accept="image/*" multiple style="display:none" />
+        </div>
+        <div style="display:flex;gap:12px;align-items:center;margin-bottom:24px;flex-wrap:wrap">
+          <div style="font-size:12px;font-weight:600;letter-spacing:0.5px;text-transform:uppercase;color:var(--text-3);white-space:nowrap">Convert to</div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap" id="conv-format-btns">
+            <button class="conv-fmt active" data-fmt="png">PNG</button>
+            <button class="conv-fmt" data-fmt="jpeg">JPG</button>
+            <button class="conv-fmt" data-fmt="webp">WEBP</button>
+            <button class="conv-fmt" data-fmt="bmp">BMP</button>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;margin-left:auto">
+            <label style="font-size:12px;color:var(--text-2)">Quality</label>
+            <input type="range" id="conv-quality" min="10" max="100" value="92" style="width:80px;accent-color:var(--text)" />
+            <span id="conv-quality-val" style="font-size:12px;font-weight:600;color:var(--text);min-width:28px">92%</span>
+          </div>
+        </div>
+        <div id="conv-list" style="display:flex;flex-direction:column;gap:10px"></div>
+        <div id="conv-actions" style="display:none;margin-top:20px;gap:10px;flex-wrap:wrap">
+          <button class="btn btn-primary" id="conv-all-btn">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            Download all
+          </button>
+          <button class="btn btn-ghost" id="conv-clear-btn">Clear</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 8: FRAME TO TIMECODE ===== -->
+    <div class="tool-panel" id="panel-frametc">
+      <div class="tool-card" style="max-width:560px">
+        <div class="tool-card-title">Frame → Timecode Converter</div>
+        <div class="tool-card-desc">Masukkan jumlah frame dan frame rate, dapatkan durasi dalam format timecode (HH:MM:SS:FF) dan detik.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Jumlah Frame</label>
+            <input class="form-input" type="number" id="ftc-frames" min="0" value="0" placeholder="e.g. 1800" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Frame Rate (fps)</label>
+            <!-- Custom pill selector — no native select -->
+            <div style="display:flex;flex-wrap:wrap;gap:6px;margin-top:4px" id="ftc-fps-group">
+              <button class="bitrate-pill" data-fps="24">24 fps</button>
+              <button class="bitrate-pill" data-fps="25">25 fps</button>
+              <button class="bitrate-pill active" data-fps="30">30 fps</button>
+              <button class="bitrate-pill" data-fps="50">50 fps</button>
+              <button class="bitrate-pill" data-fps="60">60 fps</button>
+              <button class="bitrate-pill" data-fps="120">120 fps</button>
+            </div>
+            <!-- Hidden select for JS compatibility -->
+            <select id="ftc-fps" style="display:none">
+              <option value="24">24</option>
+              <option value="25">25</option>
+              <option value="30" selected>30</option>
+              <option value="50">50</option>
+              <option value="60">60</option>
+              <option value="120">120</option>
+            </select>
+          </div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:24px;display:grid;grid-template-columns:1fr 1fr;gap:20px">
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Timecode</div>
+            <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px;font-family:monospace" id="ftc-timecode">00:00:00:00</div>
+          </div>
+          <div>
+            <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:8px">Durasi</div>
+            <div style="font-size:28px;font-weight:800;letter-spacing:-0.5px" id="ftc-seconds">0.000s</div>
+          </div>
+        </div>
+        <div style="margin-top:16px;font-size:12px;color:var(--text-3);line-height:1.6" id="ftc-breakdown"></div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 9: ASPECT RATIO CALCULATOR ===== -->
+    <div class="tool-panel" id="panel-aratio">
+      <div class="tool-card" style="max-width:560px">
+        <div class="tool-card-title">Aspect Ratio Calculator</div>
+        <div class="tool-card-desc">Masukkan salah satu dimensi, otomatis hitung dimensi lainnya berdasarkan rasio yang dipilih.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:20px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Lebar (px)</label>
+            <input class="form-input" type="number" id="ar-width" min="1" placeholder="e.g. 1920" />
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Tinggi (px)</label>
+            <input class="form-input" type="number" id="ar-height" min="1" placeholder="e.g. 1080" />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:24px">
+          <label class="form-label">Rasio Preset</label>
+          <div style="display:flex;flex-wrap:wrap;gap:6px" id="ar-presets">
+            <button class="bitrate-pill" data-ratio="16:9">16:9</button>
+            <button class="bitrate-pill" data-ratio="9:16">9:16</button>
+            <button class="bitrate-pill" data-ratio="4:3">4:3</button>
+            <button class="bitrate-pill" data-ratio="1:1">1:1</button>
+            <button class="bitrate-pill" data-ratio="4:5">4:5</button>
+            <button class="bitrate-pill" data-ratio="21:9">21:9</button>
+            <button class="bitrate-pill" data-ratio="2.39:1">2.39:1</button>
+          </div>
+        </div>
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px;display:flex;align-items:center;gap:24px;flex-wrap:wrap">
+          <div id="ar-visual" style="flex-shrink:0"></div>
+          <div style="display:flex;flex-direction:column;gap:10px;flex:1">
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-3)">Rasio</span>
+              <span style="font-weight:700" id="ar-ratio-out">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-3)">Lebar</span>
+              <span style="font-weight:700" id="ar-width-out">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-3)">Tinggi</span>
+              <span style="font-weight:700" id="ar-height-out">—</span>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:13px">
+              <span style="color:var(--text-3)">Total Pixel</span>
+              <span style="font-weight:700" id="ar-pixels-out">—</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 10: COLOR CONTRAST CHECKER ===== -->
+    <div class="tool-panel" id="panel-contrast">
+      <div class="tool-card" style="max-width:600px">
+        <div class="tool-card-title">Color Contrast Checker</div>
+        <div class="tool-card-desc">Cek apakah kombinasi warna teks dan background memenuhi standar aksesibilitas WCAG. Penting biar teks di video tidak tenggelam.</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:24px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Warna Teks</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label class="cc-color-label" title="Pilih warna teks">
+                <input type="color" id="cc-fg" value="#ffffff" class="cc-color-input" />
+                <span class="cc-color-preview" id="cc-fg-preview" style="background:#ffffff"></span>
+              </label>
+              <input class="form-input" type="text" id="cc-fg-hex" value="#ffffff" maxlength="7" style="flex:1;font-family:monospace" placeholder="#ffffff" />
+            </div>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Warna Background</label>
+            <div style="display:flex;gap:8px;align-items:center">
+              <label class="cc-color-label" title="Pilih warna background">
+                <input type="color" id="cc-bg" value="#000000" class="cc-color-input" />
+                <span class="cc-color-preview" id="cc-bg-preview" style="background:#000000"></span>
+              </label>
+              <input class="form-input" type="text" id="cc-bg-hex" value="#000000" maxlength="7" style="flex:1;font-family:monospace" placeholder="#000000" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Pick from image -->
+        <div style="margin-bottom:24px">
+          <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">Pick color from image</div>
+          <div class="cc-img-drop" id="ccImgDrop">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+            <span id="ccImgDropLabel">Drop image or <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById('ccImgInput').click()">browse</span></span>
+            <input type="file" id="ccImgInput" accept="image/*" style="display:none" />
+          </div>
+          <div id="ccImgWrap" style="display:none;position:relative;margin-top:10px">
+            <canvas id="ccImgCanvas" style="width:100%;border-radius:var(--radius-md);border:1px solid var(--border);cursor:crosshair;display:block"></canvas>
+            <div id="ccImgMagnifier" style="display:none;position:absolute;width:60px;height:60px;border-radius:50%;border:2px solid var(--text);box-shadow:0 4px 16px rgba(0,0,0,0.5);pointer-events:none;overflow:hidden;background:#000"></div>
+            <div id="ccPickedColor" style="display:none;margin-top:8px;display:flex;align-items:center;gap:10px">
+              <div id="ccPickedSwatch" style="width:28px;height:28px;border-radius:var(--radius);border:1px solid var(--border)"></div>
+              <span id="ccPickedHex" style="font-size:12px;font-family:monospace;color:var(--text-2)">—</span>
+              <button class="btn btn-ghost btn-sm" id="ccApplyFg">→ Teks</button>
+              <button class="btn btn-ghost btn-sm" id="ccApplyBg">→ BG</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview -->
+        <div id="cc-preview" style="border-radius:var(--radius-md);padding:24px;margin-bottom:20px;text-align:center;transition:background 0.2s,color 0.2s">
+          <div style="font-size:22px;font-weight:700;margin-bottom:4px" id="cc-preview-text">Vamorax</div>
+          <div style="font-size:13px" id="cc-preview-sub">Preview teks di atas background</div>
+        </div>
+
+        <!-- Result -->
+        <div style="background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px">
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px">
+            <div>
+              <div style="font-size:10px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:4px">Contrast Ratio</div>
+              <div style="font-size:32px;font-weight:800;letter-spacing:-1px" id="cc-ratio">—</div>
+            </div>
+            <div id="cc-badge" style="padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:0.5px">—</div>
+          </div>
+          <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px">
+            <div style="text-align:center;padding:12px;background:var(--bg-2);border-radius:var(--radius)">
+              <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">AA Normal</div>
+              <div style="font-size:16px;font-weight:700" id="cc-aa-normal">—</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--bg-2);border-radius:var(--radius)">
+              <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">AA Large</div>
+              <div style="font-size:16px;font-weight:700" id="cc-aa-large">—</div>
+            </div>
+            <div style="text-align:center;padding:12px;background:var(--bg-2);border-radius:var(--radius)">
+              <div style="font-size:10px;color:var(--text-3);margin-bottom:4px">AAA Normal</div>
+              <div style="font-size:16px;font-weight:700" id="cc-aaa">—</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== TOOL 11: MEDIA DOWNLOADER ===== -->
+    <div class="tool-panel" id="panel-downloader">
+      <div class="tool-card" style="max-width:800px">
+        <div class="tool-card-title">Media Downloader</div>
+        <div class="tool-card-desc">Paste link dari YouTube, TikTok, Instagram, atau Twitter — analisis otomatis saat link dideteksi.</div>
+
+        <!-- Secure badge -->
+        <div style="display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);font-size:11px;font-weight:600;color:#4ade80;margin-bottom:20px">
+          <span style="width:6px;height:6px;border-radius:50%;background:#4ade80;animation:notif-pulse 2s ease-in-out infinite;display:inline-block"></span>
+          Secure &amp; Encrypted
+        </div>
+
+        <!-- URL Input -->
+        <div style="position:relative;margin-bottom:16px">
+          <input class="form-input" type="url" id="dlInput2"
+            placeholder="Paste link dari YouTube, TikTok, Instagram, Twitter…"
+            autocomplete="off" spellcheck="false" style="padding-right:80px" />
+          <button id="dlPasteBtn2" style="position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:5px 12px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-2);cursor:pointer;transition:background var(--transition),color var(--transition)">Paste</button>
+        </div>
+
+        <!-- Format toggle -->
+        <div style="display:flex;gap:8px;margin-bottom:20px">
+          <button id="dl2FmtVideo" style="flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--text);color:var(--bg);border:1.5px solid var(--text);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+            MP4 Video
+          </button>
+          <button id="dl2FmtAudio" style="flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--bg-3);color:var(--text-3);border:1.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            MP3 Audio
+          </button>
+        </div>
+
+        <!-- Loading bar -->
+        <div id="dl2Loading" style="display:none;margin-bottom:16px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:14px">
+          <div style="font-size:12px;color:var(--text-2);margin-bottom:8px;display:flex;align-items:center;gap:8px">
+            <span style="width:11px;height:11px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--text);animation:dl-spin .7s linear infinite;flex-shrink:0;display:inline-block"></span>
+            <span id="dl2LoadingText">Menganalisis link…</span>
+          </div>
+          <div style="height:3px;background:var(--border);border-radius:999px;overflow:hidden">
+            <div id="dl2ProgressBar" style="height:100%;background:var(--text);border-radius:999px;width:0;transition:width .3s ease"></div>
+          </div>
+        </div>
+
+        <!-- 2-column result layout -->
+        <div id="dl2Results" style="display:none">
+          <div style="display:grid;grid-template-columns:200px 1fr;gap:16px;align-items:start" class="dl2-result-grid">
+
+            <!-- Left: thumbnail + info -->
+            <div>
+              <div id="dl2Thumb" style="width:100%;aspect-ratio:16/9;border-radius:var(--radius-md);background:var(--bg-3);border:1px solid var(--border);overflow:hidden;margin-bottom:10px;display:flex;align-items:center;justify-content:center;color:var(--text-3)">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+              </div>
+              <div style="font-size:12px;font-weight:600;color:var(--text);line-height:1.4;margin-bottom:6px" id="dl2ResultTitle">—</div>
+              <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+                <span style="font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-3)" id="dl2Platform">—</span>
+              </div>
+            </div>
+
+            <!-- Right: quality options -->
+            <div>
+              <div style="font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:10px">Pilih kualitas</div>
+              <div id="dl2OptionsList" style="display:flex;flex-direction:column;gap:6px"></div>
+            </div>
+
+          </div>
+        </div>
+
+        <!-- Supported platforms -->
+        <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-top:20px;flex-wrap:wrap">
+          <span style="font-size:11px;color:var(--text-3);letter-spacing:.5px;text-transform:uppercase;font-weight:500">Supported</span>
+          <div style="display:flex;gap:12px;align-items:center;opacity:.3;color:var(--text)">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="var(--bg-2)"/></svg>
+            <svg width="16" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<footer class="footer">
+  <div class="footer-grid">
+    <div>
+      <div class="footer-brand">Vamorax</div>
+      <p class="footer-desc">Premium Alight Motion presets for content creators.</p>
+      <div class="social-links">
+        <a href="#" class="social-link" title="Instagram"><svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg></a>
+        <a href="#" class="social-link" title="TikTok"><svg viewBox="0 0 24 24"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></a>
+        <a href="#" class="social-link" title="YouTube"><svg viewBox="0 0 24 24"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02"/></svg></a>
+        <a href="mailto:support@Vamorax.com" class="social-link" title="Email"><svg viewBox="0 0 24 24"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg></a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-heading">Shop</div>
+      <div class="footer-links">
+        <a href="shop.html">All Presets</a>
+        <a href="free-presets.html">Free Presets</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-heading">Learn</div>
+      <div class="footer-links">
+        <a href="tutorials.html">Tutorials</a>
+        <a href="edit-hub.html">Edit Hub</a>
+      </div>
+    </div>
+    <div>
+      <div class="footer-heading">Support</div>
+      <div class="footer-links">
+        <a href="contact.html">Contact</a>
+        <a href="login.html">My Account</a>
+      </div>
+    </div>
+  </div>
+  <div class="footer-bottom"><span>© 2025 Vamorax</span><span>Made for creators</span></div>
+</footer>
+</div><!-- /page-content -->
+<script type="module">
+  import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav } from './js/ui.js';
+  import { initCartSidebar } from './js/cart.js';
+  import { updateNavAuth } from './js/auth.js';
+  import { initNavPill } from './js/navbar.js';
+  import { initPageTransition } from './js/transition.js';
+  import { initWaveBackground } from './js/animations.js';
+
+  window.toggleTheme = toggleTheme;
+  initPageTransition();
+  startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill();
+  initWaveBackground();
+  setTimeout(() => document.querySelectorAll('.fade-up').forEach(el => el.classList.add('visible')), 80);
+  doneProgress();
+</script>
+<script>
+/* ============================================================
+   EDIT HUB  TOOL LOGIC (vanilla JS, no external deps)
+   ============================================================ */
+
+//  Utility: copy to clipboard with toast 
+function copyText(text, label) {
+  navigator.clipboard.writeText(text).then(() => {
+    showHubToast(label ? label + ' copied!' : 'Copied!');
+  }).catch(() => {
+    const ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showHubToast(label ? label + ' copied!' : 'Copied!');
+  });
+}
+
+function showHubToast(msg) {
+  let c = document.querySelector('.toast-container');
+  if (!c) { c = document.createElement('div'); c.className = 'toast-container'; document.body.appendChild(c); }
+  const t = document.createElement('div');
+  t.className = 'toast toast-success';
+  t.innerHTML = '<span class="toast-dot"></span>' + msg;
+  c.appendChild(t);
+  setTimeout(() => { t.style.animation = 'toastOut 0.25s forwards'; setTimeout(() => t.remove(), 260); }, 2200);
+}
+
+//  TAB SWITCHER 
+function switchTab(tabName) {
+  document.querySelectorAll('.hub-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.hub-dropdown-item').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.tool-panel').forEach(p => p.classList.remove('active'));
+
+  const activeTab  = document.querySelector(`.hub-tab[data-tab="${tabName}"]`);
+  const activeItem = document.querySelector(`.hub-dropdown-item[data-tab="${tabName}"]`);
+  const panel      = document.getElementById('panel-' + tabName);
+
+  if (activeTab)  {
+    activeTab.classList.add('active');
+    // Scroll tab into view smoothly
+    activeTab.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+  }
+  if (activeItem) activeItem.classList.add('active');
+  if (panel)      panel.classList.add('active');
+
+  // Update dropdown label
+  const label = document.getElementById('hubDropdownLabel');
+  if (label && activeItem) label.textContent = activeItem.textContent.trim();
+}
+
+// Desktop tabs
+document.querySelectorAll('.hub-tab').forEach(tab => {
+  tab.addEventListener('click', () => switchTab(tab.dataset.tab));
+});
+
+// ── Arrow navigation for tab bar ──
+(function() {
+  const track = document.getElementById('hubTabs');
+  const btnL  = document.getElementById('hubTabsLeft');
+  const btnR  = document.getElementById('hubTabsRight');
+  if (!track || !btnL || !btnR) return;
+
+  const STEP = 160;
+
+  function updateArrows() {
+    const atStart = track.scrollLeft <= 4;
+    const atEnd   = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+    btnL.classList.toggle('visible', !atStart);
+    btnR.classList.toggle('visible', !atEnd);
+  }
+
+  btnL.addEventListener('click', () => {
+    track.scrollBy({ left: -STEP, behavior: 'smooth' });
+  });
+  btnR.addEventListener('click', () => {
+    track.scrollBy({ left: STEP, behavior: 'smooth' });
+  });
+
+  track.addEventListener('scroll', updateArrows, { passive: true });
+  // Initial state
+  setTimeout(updateArrows, 100);
+  window.addEventListener('resize', updateArrows, { passive: true });
+})();
+const hubDropdown = document.getElementById('hubDropdown');
+const hubDropdownBtn = document.getElementById('hubDropdownBtn');
+
+hubDropdownBtn?.addEventListener('click', () => hubDropdown.classList.toggle('open'));
+
+document.querySelectorAll('.hub-dropdown-item').forEach(item => {
+  item.addEventListener('click', () => {
+    hubDropdown.classList.remove('open');
+    switchTab(item.dataset.tab);
+  });
+});
+
+// Close dropdown on outside click
+document.addEventListener('click', e => {
+  if (hubDropdown && !hubDropdown.contains(e.target)) hubDropdown.classList.remove('open');
+});
+
+// Read ?tab= from URL and switch on load
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const tab = params.get('tab');
+  if (tab) switchTab(tab);
+})();
+
+/* ============================================================
+   TOOL 1  COLOR PALETTE GENERATOR
+   ============================================================ */
+(function() {
+  const dropZone   = document.getElementById('paletteDropZone');
+  const fileInput  = document.getElementById('palette-file-input');
+  const urlInput   = document.getElementById('palette-url-input');
+  const urlBtn     = document.getElementById('palette-url-btn');
+  const preview    = document.getElementById('palette-preview');
+  const canvas     = document.getElementById('palette-canvas');
+  const swatchWrap = document.getElementById('palette-swatches');
+  const ctx        = canvas.getContext('2d');
+
+  // Drag-and-drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+  dropZone.addEventListener('click', e => {
+    if (e.target.tagName !== 'SPAN') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+  // URL load
+  urlBtn.addEventListener('click', () => {
+    const url = urlInput.value.trim();
+    if (url) loadUrl(url);
+  });
+  urlInput.addEventListener('keydown', e => { if (e.key === 'Enter') urlBtn.click(); });
+
+  function loadFile(file) {
+    const reader = new FileReader();
+    reader.onload = e => loadUrl(e.target.result);
+    reader.readAsDataURL(file);
+  }
+
+  function loadUrl(src) {
+    preview.style.display = 'none';
+    swatchWrap.innerHTML = '<div class="palette-empty"><span class="spinner"></span></div>';
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      preview.src = src;
+      preview.style.display = 'block';
+      extractColors(img);
+    };
+    img.onerror = () => {
+      swatchWrap.innerHTML = '<div class="palette-empty">Could not load image. If using a URL, the server must allow cross-origin requests.</div>';
+    };
+    img.src = src;
+  }
+
+  function extractColors(img) {
+    const SIZE = 120;
+    canvas.width = SIZE; canvas.height = SIZE;
+    ctx.drawImage(img, 0, 0, SIZE, SIZE);
+    const data = ctx.getImageData(0, 0, SIZE, SIZE).data;
+
+    // Quantize into buckets (4-bit per channel = 16^3 buckets)
+    const buckets = {};
+    for (let i = 0; i < data.length; i += 4) {
+      const a = data[i + 3];
+      if (a < 128) continue; // skip transparent
+      const r = Math.round(data[i]     / 16) * 16;
+      const g = Math.round(data[i + 1] / 16) * 16;
+      const b = Math.round(data[i + 2] / 16) * 16;
+      const key = (r << 16) | (g << 8) | b;
+      buckets[key] = (buckets[key] || 0) + 1;
+    }
+
+    // Sort by frequency, pick top 10, then deduplicate by perceptual distance
+    const sorted = Object.entries(buckets)
+      .sort((a, b) => b[1] - a[1])
+      .map(([key]) => {
+        const k = parseInt(key);
+        return { r: (k >> 16) & 0xff, g: (k >> 8) & 0xff, b: k & 0xff };
+      });
+
+    const palette = [];
+    for (const c of sorted) {
+      if (palette.length >= 8) break;
+      const tooClose = palette.some(p => colorDist(c, p) < 60);
+      if (!tooClose) palette.push(c);
+    }
+
+    renderSwatches(palette);
+  }
+
+  function colorDist(a, b) {
+    return Math.sqrt((a.r-b.r)**2 + (a.g-b.g)**2 + (a.b-b.b)**2);
+  }
+
+  function toHex(c) {
+    return '#' + [c.r, c.g, c.b].map(v => v.toString(16).padStart(2, '0')).join('').toUpperCase();
+  }
+
+  function renderSwatches(palette) {
+    if (!palette.length) {
+      swatchWrap.innerHTML = '<div class="palette-empty">No colors extracted. Try a different image.</div>';
+      return;
+    }
+    swatchWrap.innerHTML = palette.map(c => {
+      const hex = toHex(c);
+      return `<div class="palette-swatch" onclick="copyText('${hex}','${hex}')" title="Click to copy ${hex}">
+        <div class="palette-swatch-color" style="background:${hex}"></div>
+        <div class="palette-swatch-hex">${hex}</div>
+      </div>`;
+    }).join('');
+  }
+})();
+
+/* ============================================================
+   TOOL 2  VIDEO BITRATE CALCULATOR
+   ============================================================ */
+(function() {
+  // Base bitrates (Mbps) for 1080p/30fps/medium — berdasarkan rekomendasi YouTube & industri
+  const RES_FACTOR   = { '720': 0.42, '1080': 1.0, '1440': 2.0, '2160': 4.5, '2160-120': 4.5 };
+  const FPS_FACTOR   = { '24': 0.85, '25': 0.90, '30': 1.0, '50': 1.45, '60': 1.6, '120': 2.6 };
+  const QUAL_FACTOR  = { 'low': 0.45, 'medium': 1.0, 'high': 2.2 };
+  const BASE_MBPS    = 8;
+  const AUDIO_KBPS   = { 'low': 128, 'medium': 192, 'high': 320 };
+
+  // Info cards per pilihan
+  const RES_INFO = {
+    '720': {
+      title: '720p — HD (1280×720)',
+      desc: 'Resolusi standar HD. Cocok untuk konten ringan, preview, atau platform dengan bandwidth terbatas. File lebih kecil, loading lebih cepat.',
+      tags: ['YouTube', 'Facebook', 'Streaming ringan']
+    },
+    '1080': {
+      title: '1080p — Full HD (1920×1080)',
+      desc: 'Standar industri saat ini. Direkomendasikan untuk semua konten media sosial, YouTube, dan distribusi umum. Keseimbangan terbaik antara kualitas dan ukuran file.',
+      tags: ['YouTube', 'Instagram', 'TikTok', 'Facebook', 'Alight Motion']
+    },
+    '1440': {
+      title: '1440p — 2K (2560×1440)',
+      desc: 'Resolusi antara 1080p dan 4K. Ideal untuk konten yang ingin tampil tajam di monitor besar atau sebagai master file sebelum di-downscale ke 1080p.',
+      tags: ['YouTube', 'Master file', 'Monitor 2K']
+    },
+    '2160': {
+      title: '4K — Ultra HD (3840×2160)',
+      desc: 'Kualitas tertinggi untuk distribusi. Direkomendasikan YouTube untuk konten premium. File sangat besar — pastikan storage dan hardware mendukung.',
+      tags: ['YouTube 4K', 'Sinema', 'Arsip premium']
+    },
+    '2160-120': {
+      title: '4K 120fps — Ultra HD High Frame Rate',
+      desc: 'Kombinasi resolusi dan frame rate tertinggi. Digunakan untuk slow-motion ekstrem atau konten HFR. Membutuhkan hardware kamera dan perangkat editing yang sangat kuat. Ukuran file sangat besar.',
+      tags: ['Slow-motion', 'HFR', 'Sinema premium', 'Gaming capture']
+    },
+  };
+
+  const FPS_INFO = {
+    '24': {
+      title: '24 fps — Sinematik',
+      desc: 'Standar film bioskop sejak era awal sinema. Memberikan nuansa "film" yang natural dengan motion blur yang khas. Pilihan utama untuk storytelling, vlog sinematik, dan konten yang ingin terasa seperti film.',
+      tags: ['Film', 'Vlog sinematik', 'Storytelling', 'YouTube']
+    },
+    '25': {
+      title: '25 fps — PAL / Broadcast',
+      desc: 'Standar broadcast di Eropa, Asia, dan Australia (sistem PAL). Cocok jika konten akan ditayangkan di TV atau didistribusikan ke wilayah PAL. Hampir identik dengan 24fps secara visual.',
+      tags: ['TV broadcast', 'PAL', 'Eropa/Asia', 'Distribusi internasional']
+    },
+    '30': {
+      title: '30 fps — Standar Media Sosial',
+      desc: 'Frame rate paling umum untuk konten digital. Direkomendasikan oleh YouTube, Instagram, dan TikTok. Terasa lebih smooth dari 24fps tapi masih natural. Pilihan aman untuk semua jenis konten.',
+      tags: ['YouTube', 'Instagram', 'TikTok', 'Reels', 'Shorts']
+    },
+    '50': {
+      title: '50 fps — Smooth PAL',
+      desc: 'Versi smooth dari standar PAL. Gerakan terasa sangat mulus, cocok untuk konten aksi, olahraga, atau video yang akan di-slowdown 2× menjadi 25fps. Populer di konten Eropa.',
+      tags: ['Olahraga', 'Aksi', 'Slow-motion 2×', 'PAL smooth']
+    },
+    '60': {
+      title: '60 fps — Smooth / Gaming',
+      desc: 'Sangat disarankan untuk video gaming, konten aksi cepat, dan olahraga. Gerakan terasa sangat mulus dan responsif. Bisa di-slowdown 2× menjadi 30fps untuk efek slow-motion. Direkomendasikan YouTube untuk konten gaming.',
+      tags: ['Gaming', 'Aksi', 'Olahraga', 'Slow-motion 2×', 'YouTube Gaming']
+    },
+    '120': {
+      title: '120 fps — High Frame Rate / Slow-motion',
+      desc: 'Frame rate tertinggi untuk keperluan slow-motion ekstrem. Bisa di-slowdown 4× menjadi 30fps atau 5× menjadi 24fps. Hanya tersedia di resolusi 4K pada kamera dan perangkat tertentu. Membutuhkan storage dan processing yang sangat besar.',
+      tags: ['Slow-motion 4×', 'HFR', 'Aksi ekstrem', 'Hanya 4K']
+    },
+  };
+
+  const QUALITY_INFO = {
+    'low': {
+      title: 'Low — Streaming / Upload Cepat',
+      desc: 'Bitrate rendah untuk streaming langsung atau upload ke platform yang akan mengompresi ulang video. Ukuran file kecil, cocok untuk konten yang tidak butuh kualitas tinggi atau koneksi internet terbatas.',
+      tags: ['Live streaming', 'Twitch', 'Upload cepat', 'Bandwidth terbatas']
+    },
+    'medium': {
+      title: 'Medium — Media Sosial',
+      desc: 'Keseimbangan terbaik antara kualitas dan ukuran file. Direkomendasikan untuk upload ke YouTube, Instagram, TikTok, dan platform sosial lainnya. Platform biasanya akan mengompresi ulang, jadi bitrate ini sudah cukup.',
+      tags: ['YouTube', 'Instagram', 'TikTok', 'Facebook', 'Reels']
+    },
+    'high': {
+      title: 'High — Arsip / Master File',
+      desc: 'Bitrate tinggi untuk menyimpan master file atau distribusi tanpa kompresi ulang. Kualitas terbaik tapi ukuran file sangat besar. Gunakan untuk file arsip, distribusi ke bioskop, atau sebagai source untuk editing lebih lanjut.',
+      tags: ['Master file', 'Arsip', 'Distribusi premium', 'Editing source']
+    },
+  };
+
+  let currentRes = '1080';
+  let currentFps = '30';
+  let currentQuality = 'medium';
+
+  function renderInfoCard(cardEl, info) {
+    if (!info) { cardEl.classList.remove('visible'); return; }
+    cardEl.innerHTML = `<strong>${info.title}</strong><br>${info.desc}<br><br>${info.tags.map(t => `<span class="bitrate-info-tag">${t}</span>`).join('')}`;
+    cardEl.classList.add('visible');
+  }
+
+  function updateFps120State() {
+    const btn = document.getElementById('fps-120-btn');
+    if (!btn) return;
+    const is4K = currentRes === '2160' || currentRes === '2160-120';
+
+    // Pakai removeAttribute/setAttribute supaya lebih reliable di semua browser
+    if (is4K) {
+      btn.removeAttribute('disabled');
+      btn.classList.remove('disabled');
+    } else {
+      btn.setAttribute('disabled', '');
+      btn.classList.add('disabled');
+      if (currentFps === '120') {
+        currentFps = '30';
+        document.querySelectorAll('[data-fps]').forEach(b => b.classList.toggle('active', b.dataset.fps === '30'));
+        renderInfoCard(document.getElementById('bitrate-fps-info'), FPS_INFO['30']);
+      }
+    }
+
+    // If 4K 120fps preset, force fps to 120
+    if (currentRes === '2160-120') {
+      currentFps = '120';
+      document.querySelectorAll('[data-fps]').forEach(b => b.classList.toggle('active', b.dataset.fps === '120'));
+      renderInfoCard(document.getElementById('bitrate-fps-info'), FPS_INFO['120']);
+    }
+  }
+
+  function calc() {
+    const videoBitrate = BASE_MBPS * RES_FACTOR[currentRes] * FPS_FACTOR[currentFps] * QUAL_FACTOR[currentQuality];
+    const audioBitrate = AUDIO_KBPS[currentQuality];
+    const totalMbps    = videoBitrate + (audioBitrate / 1000);
+    const mbPerMin     = (totalMbps * 60) / 8;
+
+    document.getElementById('bitrate-mbps').textContent  = videoBitrate.toFixed(1);
+    document.getElementById('bitrate-audio').textContent = audioBitrate;
+
+    if (mbPerMin >= 1000) {
+      document.getElementById('bitrate-size').textContent      = (mbPerMin / 1024).toFixed(2);
+      document.getElementById('bitrate-size-unit').textContent = 'GB per minute';
+    } else {
+      document.getElementById('bitrate-size').textContent      = Math.round(mbPerMin);
+      document.getElementById('bitrate-size-unit').textContent = 'MB per minute';
+    }
+  }
+
+  // Resolution pills
+  document.querySelectorAll('[data-res]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-res]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentRes = btn.dataset.res;
+      renderInfoCard(document.getElementById('bitrate-res-info'), RES_INFO[currentRes]);
+      updateFps120State();
+      calc();
+    });
+  });
+
+  // FPS pills
+  document.querySelectorAll('[data-fps]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-fps]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFps = btn.dataset.fps;
+      renderInfoCard(document.getElementById('bitrate-fps-info'), FPS_INFO[currentFps]);
+      calc();
+    });
+  });
+
+  // Quality pills
+  document.querySelectorAll('[data-quality]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('[data-quality]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentQuality = btn.dataset.quality;
+      renderInfoCard(document.getElementById('bitrate-quality-info'), QUALITY_INFO[currentQuality]);
+      calc();
+    });
+  });
+
+  // Initial render
+  updateFps120State();
+  calc();
+})();
+
+/* ============================================================
+   TOOL 3  AUDIO WAVEFORM VISUALIZER
+   ============================================================ */
+(function() {
+  const dropZone   = document.getElementById('waveformDropZone');
+  const fileInput  = document.getElementById('waveform-file-input');
+  const canvas     = document.getElementById('waveform-canvas');
+  const actions    = document.getElementById('waveform-actions');
+  const optionsRow = document.getElementById('waveform-options');
+  const dlBtn      = document.getElementById('waveform-download-btn');
+  const resetBtn   = document.getElementById('waveform-reset-btn');
+  const colorInput = document.getElementById('waveform-color-input');
+  const colorPreview = document.getElementById('waveform-color-preview');
+  const ctx        = canvas.getContext('2d');
+
+  // Preset colors
+  const PRESETS = [
+    { color: '#ffffff', label: 'White' },
+    { color: '#60a5fa', label: 'Blue' },
+    { color: '#4ade80', label: 'Green' },
+    { color: '#f472b6', label: 'Pink' },
+    { color: '#fb923c', label: 'Orange' },
+    { color: '#a78bfa', label: 'Purple' },
+    { color: '#facc15', label: 'Yellow' },
+    { color: '#f87171', label: 'Red' },
+  ];
+
+  let currentColor = '#ffffff';
+  let currentBuffer = null;
+
+  const presetsEl = document.getElementById('waveform-presets');
+  if (presetsEl) {
+    presetsEl.innerHTML = PRESETS.map((p, i) =>
+      `<div class="waveform-preset-dot${i === 0 ? ' active' : ''}" style="background:${p.color}" data-color="${p.color}" title="${p.label}"></div>`
+    ).join('');
+    presetsEl.querySelectorAll('.waveform-preset-dot').forEach(dot => {
+      dot.addEventListener('click', () => {
+        presetsEl.querySelectorAll('.waveform-preset-dot').forEach(d => d.classList.remove('active'));
+        dot.classList.add('active');
+        currentColor = dot.dataset.color;
+        if (colorInput) colorInput.value = currentColor;
+        if (colorPreview) colorPreview.style.background = currentColor;
+        if (currentBuffer) drawWaveform(currentBuffer);
+      });
+    });
+  }
+
+  // Color picker sync
+  colorInput?.addEventListener('input', () => {
+    currentColor = colorInput.value;
+    if (colorPreview) colorPreview.style.background = currentColor;
+    presetsEl?.querySelectorAll('.waveform-preset-dot').forEach(d => d.classList.remove('active'));
+    if (currentBuffer) drawWaveform(currentBuffer);
+  });
+
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('audio/')) processAudio(file);
+  });
+  dropZone.addEventListener('click', e => {
+    if (e.target.tagName !== 'SPAN') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) processAudio(fileInput.files[0]); });
+
+  function processAudio(file) {
+    dropZone.querySelector('.palette-upload-label').textContent = 'Processing…';
+    const reader = new FileReader();
+    reader.onload = e => {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      if (!AudioCtx) {
+        dropZone.querySelector('.palette-upload-label').textContent = 'Web Audio API not supported.';
+        return;
+      }
+      const audioCtx = new AudioCtx();
+      audioCtx.decodeAudioData(e.target.result, buffer => {
+        currentBuffer = buffer;
+        drawWaveform(buffer);
+        audioCtx.close();
+        dropZone.querySelector('.palette-upload-label').textContent = file.name;
+        if (optionsRow) optionsRow.style.display = 'flex';
+      }, () => {
+        dropZone.querySelector('.palette-upload-label').textContent = 'Could not decode audio file.';
+      });
+    };
+    reader.readAsArrayBuffer(file);
+  }
+
+  function drawWaveform(buffer) {
+    const W = 720, H = 160;
+    canvas.width = W; canvas.height = H;
+    canvas.style.display = 'block';
+    actions.style.display = 'flex';
+
+    const data = buffer.getChannelData(0);
+    const step = Math.ceil(data.length / W);
+    const amp  = H / 2;
+    const isDark = document.documentElement.getAttribute('data-theme') !== 'light';
+
+    // Background
+    ctx.fillStyle = isDark ? '#111114' : '#f0f0f4';
+    ctx.fillRect(0, 0, W, H);
+
+    // Subtle grid lines
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.04)' : 'rgba(0,0,0,0.04)';
+    ctx.lineWidth = 1;
+    [0.25, 0.5, 0.75].forEach(y => {
+      ctx.beginPath(); ctx.moveTo(0, H * y); ctx.lineTo(W, H * y); ctx.stroke();
+    });
+
+    // Center line
+    ctx.strokeStyle = isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.12)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(0, amp); ctx.lineTo(W, amp); ctx.stroke();
+
+    // Waveform — gradient from chosen color to dimmer version
+    const hex = currentColor;
+    const r = parseInt(hex.slice(1,3),16), g = parseInt(hex.slice(3,5),16), b = parseInt(hex.slice(5,7),16);
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    grad.addColorStop(0,   `rgba(${r},${g},${b},0.9)`);
+    grad.addColorStop(0.5, `rgba(${r},${g},${b},1)`);
+    grad.addColorStop(1,   `rgba(${r},${g},${b},0.9)`);
+    ctx.fillStyle = grad;
+
+    for (let x = 0; x < W; x++) {
+      let min = 1, max = -1;
+      for (let j = 0; j < step; j++) {
+        const v = data[x * step + j] || 0;
+        if (v < min) min = v;
+        if (v > max) max = v;
+      }
+      const y1 = (1 + min) * amp;
+      const y2 = Math.max(1, (max - min) * amp);
+      ctx.fillRect(x, y1, 1, y2);
+    }
+
+    // Reflection (mirror, dimmer)
+    ctx.save();
+    ctx.globalAlpha = 0.15;
+    ctx.scale(1, -1);
+    ctx.drawImage(canvas, 0, -H);
+    ctx.restore();
+  }
+
+  dlBtn.addEventListener('click', () => {
+    const link = document.createElement('a');
+    link.download = 'waveform.png';
+    link.href = canvas.toDataURL('image/png');
+    link.click();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    canvas.style.display = 'none';
+    actions.style.display = 'none';
+    if (optionsRow) optionsRow.style.display = 'none';
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    fileInput.value = '';
+    currentBuffer = null;
+    dropZone.querySelector('.palette-upload-label').innerHTML = 'Drop an audio file here or <span style="color:var(--text);text-decoration:underline;cursor:pointer" onclick="document.getElementById(\'waveform-file-input\').click()">browse</span>';
+  });
+})();
+
+/* ============================================================
+   TOOL 4  TEXT DECORATOR
+   ============================================================ */
+(function() {
+  const input    = document.getElementById('decorator-input');
+  const grid     = document.getElementById('decorator-styles-grid');
+  const clearBtn = document.getElementById('decorator-clear-btn');
+
+  // Unicode conversion maps
+  const STYLES = [
+    { name: 'Bold',          fn: s => convert(s, 0x1D400, 0x1D41A) },
+    { name: 'Italic',        fn: s => convert(s, 0x1D434, 0x1D44E) },
+    { name: 'Bold Italic',   fn: s => convert(s, 0x1D468, 0x1D482) },
+    { name: 'Script',        fn: s => convert(s, 0x1D49C, 0x1D4B6) },
+    { name: 'Bold Script',   fn: s => convert(s, 0x1D4D0, 0x1D4EA) },
+    { name: 'Fraktur',       fn: s => convert(s, 0x1D504, 0x1D51E) },
+    { name: 'Double Struck', fn: s => convert(s, 0x1D538, 0x1D552) },
+    { name: 'Sans-Serif',    fn: s => convert(s, 0x1D5A0, 0x1D5BA) },
+    { name: 'Sans Bold',     fn: s => convert(s, 0x1D5D4, 0x1D5EE) },
+    { name: 'Sans Italic',   fn: s => convert(s, 0x1D608, 0x1D622) },
+    { name: 'Monospace',     fn: s => convert(s, 0x1D670, 0x1D68A) },
+    { name: 'Bubble',        fn: s => bubble(s, false) },
+    { name: 'Bubble Filled', fn: s => bubble(s, true) },
+    { name: 'Fullwidth',     fn: s => fullwidth(s) },
+    { name: 'Small Caps',    fn: s => smallcaps(s) },
+    { name: 'Strikethrough', fn: s => [...s].map(c => c + '\u0336').join('') },
+    { name: 'Underline',     fn: s => [...s].map(c => c + '\u0332').join('') },
+    { name: 'Overline',      fn: s => [...s].map(c => c + '\u0305').join('') },
+    { name: 'Inverted',      fn: s => invert(s) },
+    { name: 'Mirrored',      fn: s => mirror(s) },
+  ];
+
+  function convert(str, upperBase, lowerBase) {
+    return [...str].map(c => {
+      const code = c.charCodeAt(0);
+      if (code >= 65 && code <= 90) return String.fromCodePoint(upperBase + code - 65);
+      if (code >= 97 && code <= 122) return String.fromCodePoint(lowerBase + code - 97);
+      return c;
+    }).join('');
+  }
+
+  const BUBBLE_NORMAL = 'abcdefghijklmnopqrstuvwxyz0123456789';
+  // Circled letters a-z and digits 0-9
+  const BUBBLE_CHARS  = '\u24D0\u24D1\u24D2\u24D3\u24D4\u24D5\u24D6\u24D7\u24D8\u24D9\u24DA\u24DB\u24DC\u24DD\u24DE\u24DF\u24E0\u24E1\u24E2\u24E3\u24E4\u24E5\u24E6\u24E7\u24E8\u24E9\u24EA\u2460\u2461\u2462\u2463\u2464\u2465\u2466\u2467\u2468';
+  // Negative circled capital letters A-Z (U+1F150..U+1F169)
+  const BUBBLE_FILLED_CP = [0x1F150,0x1F151,0x1F152,0x1F153,0x1F154,0x1F155,0x1F156,0x1F157,0x1F158,0x1F159,0x1F15A,0x1F15B,0x1F15C,0x1F15D,0x1F15E,0x1F15F,0x1F160,0x1F161,0x1F162,0x1F163,0x1F164,0x1F165,0x1F166,0x1F167,0x1F168,0x1F169];
+  function bubble(str, filled) {
+    return [...str.toLowerCase()].map(c => {
+      const i = BUBBLE_NORMAL.indexOf(c);
+      if (i === -1) return c;
+      if (filled && i < 26) return String.fromCodePoint(BUBBLE_FILLED_CP[i]);
+      return BUBBLE_CHARS[i] || c;
+    }).join('');
+  }
+
+  function fullwidth(str) {
+    return [...str].map(c => {
+      const code = c.charCodeAt(0);
+      if (code >= 33 && code <= 126) return String.fromCharCode(code + 0xFF01 - 33);
+      return c;
+    }).join('');
+  }
+
+  const SC_MAP = {a:'ᴀ',b:'ʙ',c:'ᴄ',d:'ᴅ',e:'ᴇ',f:'ꜰ',g:'ɢ',h:'ʜ',i:'ɪ',j:'ᴊ',k:'ᴋ',l:'ʟ',m:'ᴍ',n:'ɴ',o:'ᴏ',p:'ᴘ',q:'Q',r:'ʀ',s:'ꜱ',t:'ᴛ',u:'ᴜ',v:'ᴠ',w:'ᴡ',x:'x',y:'ʏ',z:'ᴢ'};
+  function smallcaps(str) { return [...str.toLowerCase()].map(c => SC_MAP[c] || c).join(''); }
+
+  const INV_MAP = {a:'ɐ',b:'q',c:'ɔ',d:'p',e:'ǝ',f:'ɟ',g:'ƃ',h:'ɥ',i:'ᴉ',j:'ɾ',k:'ʞ',l:'l',m:'ɯ',n:'u',o:'o',p:'d',q:'b',r:'ɹ',s:'s',t:'ʇ',u:'n',v:'ʌ',w:'ʍ',x:'x',y:'ʎ',z:'z'};
+  function invert(str) { return [...str.toLowerCase()].map(c => INV_MAP[c] || c).reverse().join(''); }
+
+  const MIR_MAP = {a:'ɒ',b:'d',c:'ɔ',d:'b',e:'ɘ',f:'ʇ',g:'ϱ',h:'ʜ',i:'i',j:'ꞁ',k:'ʞ',l:'l',m:'m',n:'n',o:'o',p:'q',q:'p',r:'ɿ',s:'ƨ',t:'ƚ',u:'u',v:'v',w:'w',x:'x',y:'y',z:'z'};
+  function mirror(str) { return [...str.toLowerCase()].map(c => MIR_MAP[c] || c).reverse().join(''); }
+
+  function renderStyles() {
+    const text = input.value || 'Vamorax';
+    grid.innerHTML = STYLES.map(s => {
+      const out = s.fn(text);
+      return `<div class="decorator-style-item">
+        <div>
+          <div class="decorator-style-label">${s.name}</div>
+          <div class="decorator-style-preview">${out || ''}</div>
+        </div>
+        <button class="decorator-copy-btn" onclick="copyText(${JSON.stringify(out)},'${s.name}')">Copy</button>
+      </div>`;
+    }).join('');
+  }
+
+  input.addEventListener('input', renderStyles);
+  clearBtn.addEventListener('click', () => { input.value = ''; renderStyles(); });
+  renderStyles();
+
+  // Symbol categories
+  const SYMBOLS = {
+    arrows: [
+      '\u2192','\u2190','\u2191','\u2193','\u2197','\u2198','\u2199','\u2196',
+      '\u2194','\u2195','\u21D2','\u21D0','\u21D1','\u21D3','\u21D4','\u21D5',
+      '\u279C','\u27A1','\u2B05','\u2B06','\u2B07','\u27A4','\u27A5','\u27A6',
+      '\u27A7','\u27A8','\u27A9','\u27AA','\u27AB','\u27AC','\u27AD','\u27AE',
+      '\u27AF','\u27B1','\u27B2','\u27B3','\u27B4','\u27B5','\u27B6','\u27B7',
+      '\u27B8','\u27B9','\u27BA','\u27BB','\u27BC','\u27BD','\u27BE',
+      '\u27F5','\u27F6','\u27F7','\u27F8','\u27F9','\u27FA'
+    ],
+    stars: [
+      '\u2605','\u2606','\u2726','\u2727','\u2729','\u272A','\u272B','\u272C',
+      '\u272D','\u272E','\u272F','\u2730','\u2B50','\uD83C\uDF1F','\uD83D\uDCAB',
+      '\u2728','\uD83C\uDF20','\u26A1','\uD83D\uDD25','\uD83D\uDCA5','\uD83C\uDF08',
+      '\uD83C\uDF87','\uD83C\uDF86','\u2734','\u2733','\u2747','\u2748','\u2749',
+      '\u274A','\u274B','\u2735','\u2736','\u2737','\u2738','\u2739','\u273A',
+      '\u273B','\u273C','\u273D','\u273E','\u273F','\u2740','\u2741','\u2742',
+      '\u2743','\u2744','\u2745','\u2746'
+    ],
+    shapes: [
+      '\u25CF','\u25CB','\u25C9','\u25CE','\u25CC','\u25CD','\u25D0','\u25D1',
+      '\u25D2','\u25D3','\u25D4','\u25D5','\u25D6','\u25D7','\u25A0','\u25A1',
+      '\u25AA','\u25AB','\u25AC','\u25AD','\u25AE','\u25AF','\u25B2','\u25B3',
+      '\u25B4','\u25B5','\u25B6','\u25B7','\u25B8','\u25B9','\u25BA','\u25BB',
+      '\u25BC','\u25BD','\u25BE','\u25BF','\u25C0','\u25C1','\u25C2','\u25C3',
+      '\u25C4','\u25C5','\u25C6','\u25C7','\u25C8','\u25CA','\u2666','\u2665',
+      '\u2660','\u2663','\u2664','\u2661','\u2662','\u2667',
+      '\u2B1F','\u2B20','\u2B21','\u2B22','\u2B23','\u2B24','\u2B25','\u2B26',
+      '\u2B27','\u2B28','\u2B29','\u2B2A','\u2B2B','\u2B2C','\u2B2D','\u2B2E','\u2B2F'
+    ],
+  };
+
+  Object.entries(SYMBOLS).forEach(([cat, syms]) => {
+    const el = document.getElementById('symbols-' + cat);
+    if (!el) return;
+    el.innerHTML = syms.map(s =>
+      `<button class="symbol-btn" onclick="copyText('${s}')" title="Copy ${s}">${s}</button>`
+    ).join('');
+  });
+})();
+
+/* ============================================================
+   TOOL 5  ASPECT RATIO HELPER
+   ============================================================ */
+(function() {
+  const PLATFORMS = [
+    { platform: 'TikTok',           name: 'TikTok Video',        w: 1080, h: 1920, ratio: '9:16', fps: '24 / 30 / 60', notes: 'Vertical short-form' },
+    { platform: 'Instagram',        name: 'Reels',               w: 1080, h: 1920, ratio: '9:16', fps: '30 / 60',      notes: 'Vertical, up to 90s' },
+    { platform: 'YouTube',          name: 'Shorts',              w: 1080, h: 1920, ratio: '9:16', fps: '30 / 60',      notes: 'Vertical, up to 60s' },
+    { platform: 'YouTube',          name: 'Standard Video',      w: 1920, h: 1080, ratio: '16:9', fps: '24 / 30 / 60', notes: 'Landscape, any length' },
+    { platform: 'YouTube',          name: '4K Video',            w: 3840, h: 2160, ratio: '16:9', fps: '24 / 30 / 60', notes: 'Ultra HD landscape' },
+    { platform: 'Instagram',        name: 'Feed Square',         w: 1080, h: 1080, ratio: '1:1',  fps: '30',           notes: 'Square post' },
+    { platform: 'Instagram',        name: 'Feed Portrait',       w: 1080, h: 1350, ratio: '4:5',  fps: '30',           notes: 'Portrait post' },
+    { platform: 'Instagram',        name: 'Story',               w: 1080, h: 1920, ratio: '9:16', fps: '30',           notes: 'Vertical, 15s max' },
+    { platform: 'Twitter / X',      name: 'Landscape Video',     w: 1280, h: 720,  ratio: '16:9', fps: '30 / 60',      notes: 'Up to 2m 20s' },
+    { platform: 'Twitter / X',      name: 'Square Video',        w: 720,  h: 720,  ratio: '1:1',  fps: '30',           notes: 'Square format' },
+    { platform: 'Facebook',         name: 'Feed Video',          w: 1280, h: 720,  ratio: '16:9', fps: '30',           notes: 'Landscape feed' },
+    { platform: 'Facebook',         name: 'Reels',               w: 1080, h: 1920, ratio: '9:16', fps: '30 / 60',      notes: 'Vertical short-form' },
+    { platform: 'Alight Motion',    name: 'Export (HD)',         w: 1920, h: 1080, ratio: '16:9', fps: '30 / 60',      notes: 'Standard export' },
+    { platform: 'Alight Motion',    name: 'Export (Vertical)',   w: 1080, h: 1920, ratio: '9:16', fps: '30 / 60',      notes: 'Vertical export' },
+  ];
+
+  // Visual box: max 48px wide, scaled by ratio
+  function ratioBox(w, h) {
+    const MAX = 48;
+    let bw, bh;
+    if (w >= h) { bw = MAX; bh = Math.round(MAX * h / w); }
+    else         { bh = MAX; bw = Math.round(MAX * w / h); }
+    bw = Math.max(bw, 12); bh = Math.max(bh, 12);
+    return `<div class="ratio-box" style="width:${bw}px;height:${bh}px"></div>`;
+  }
+
+  const grid = document.getElementById('ratio-grid');
+  grid.innerHTML = PLATFORMS.map(p => `
+    <div class="ratio-card">
+      <div class="ratio-platform">${p.platform}</div>
+      <div class="ratio-name">${p.name}</div>
+      <div class="ratio-visual">${ratioBox(p.w, p.h)}</div>
+      <div class="ratio-details">
+        <div class="ratio-detail-row"><span class="ratio-detail-key">Resolution</span><span class="ratio-detail-val">${p.w}\u00D7${p.h}</span></div>
+        <div class="ratio-detail-row"><span class="ratio-detail-key">Ratio</span><span class="ratio-detail-val">${p.ratio}</span></div>
+        <div class="ratio-detail-row"><span class="ratio-detail-key">FPS</span><span class="ratio-detail-val">${p.fps}</span></div>
+        <div class="ratio-detail-row"><span class="ratio-detail-key">Notes</span><span class="ratio-detail-val" style="font-size:11px;color:var(--text-2);font-weight:400">${p.notes}</span></div>
+      </div>
+    </div>`).join('');
+})();
+
+/* ============================================================
+   TOOL 6  IMAGE CONVERTER
+   ============================================================ */
+(function() {
+  const drop    = document.getElementById('conv-drop');
+  const input   = document.getElementById('conv-input');
+  const list    = document.getElementById('conv-list');
+  const actions = document.getElementById('conv-actions');
+  const allBtn  = document.getElementById('conv-all-btn');
+  const clearBtn = document.getElementById('conv-clear-btn');
+  const qualSlider = document.getElementById('conv-quality');
+  const qualVal    = document.getElementById('conv-quality-val');
+
+  let currentFmt = 'png';
+  let items = []; // { file, objectUrl, canvas, name }
+
+  // Format buttons
+  document.querySelectorAll('.conv-fmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.conv-fmt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFmt = btn.dataset.fmt;
+      // re-render previews with new format label
+      renderList();
+    });
+  });
+
+  // Quality slider
+  qualSlider.addEventListener('input', () => {
+    qualVal.textContent = qualSlider.value + '%';
+  });
+
+  // Drop zone
+  drop.addEventListener('dragover', e => { e.preventDefault(); drop.classList.add('conv-drop-hover'); });
+  drop.addEventListener('dragleave', () => drop.classList.remove('conv-drop-hover'));
+  drop.addEventListener('drop', e => {
+    e.preventDefault(); drop.classList.remove('conv-drop-hover');
+    handleFiles(Array.from(e.dataTransfer.files).filter(f => f.type.startsWith('image/')));
+  });
+  drop.addEventListener('click', e => { if (e.target.tagName !== 'SPAN') input.click(); });
+  input.addEventListener('change', () => handleFiles(Array.from(input.files)));
+
+  function handleFiles(files) {
+    files.forEach(file => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        canvas.width = img.naturalWidth;
+        canvas.height = img.naturalHeight;
+        canvas.getContext('2d').drawImage(img, 0, 0);
+        const baseName = file.name.replace(/\.[^.]+$/, '');
+        items.push({ file, objectUrl: url, canvas, name: baseName, thumb: url });
+        renderList();
+      };
+      img.src = url;
+    });
+  }
+
+  function getExt(fmt) { return fmt === 'jpeg' ? 'jpg' : fmt; }
+
+  function renderList() {
+    if (!items.length) { list.innerHTML = ''; actions.style.display = 'none'; return; }
+    actions.style.display = 'flex';
+    list.innerHTML = items.map((item, i) => {
+      const ext = getExt(currentFmt);
+      const size = (item.file.size / 1024).toFixed(0);
+      return `<div class="conv-item" id="conv-item-${i}">
+        <img class="conv-thumb" src="${item.thumb}" alt="" />
+        <div class="conv-info">
+          <div class="conv-name">${item.name}.${ext}</div>
+          <div class="conv-meta">${item.canvas.width} × ${item.canvas.height}px &nbsp;·&nbsp; orig ${size} KB</div>
+        </div>
+        <button class="conv-dl-btn ready" onclick="convDownload(${i})">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Save
+        </button>
+      </div>`;
+    }).join('');
+  }
+
+  window.convDownload = function(i) {
+    const item = items[i];
+    if (!item) return;
+    const quality = parseInt(qualSlider.value) / 100;
+    const mimeType = 'image/' + currentFmt;
+    const ext = getExt(currentFmt);
+    item.canvas.toBlob(blob => {
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url; a.download = item.name + '.' + ext;
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, mimeType, quality);
+  };
+
+  allBtn.addEventListener('click', () => {
+    items.forEach((_, i) => window.convDownload(i));
+  });
+
+  clearBtn.addEventListener('click', () => {
+    items.forEach(item => URL.revokeObjectURL(item.objectUrl));
+    items = [];
+    input.value = '';
+    renderList();
+  });
+})();
+
+/* ============================================================
+   TOOL 7  PEMBURIKAN GAMBAR
+   ============================================================ */
+(function() {
+  const dropZone       = document.getElementById('blur-drop-zone');
+  const fileInput      = document.getElementById('blur-file-input');
+  const controls       = document.getElementById('blur-controls');
+  const prevOrig       = document.getElementById('blur-preview-orig');
+  const prevOut        = document.getElementById('blur-preview-out');
+  const sizeOrig       = document.getElementById('blur-size-orig');
+  const sizeOut        = document.getElementById('blur-size-out');
+  const downloadBtn    = document.getElementById('blur-download-btn');
+  const resetBtn       = document.getElementById('blur-reset-btn');
+
+  const qualSlider      = document.getElementById('blur-quality');
+  const qualVal         = document.getElementById('blur-quality-val');
+  const pixelSlider     = document.getElementById('blur-pixel');
+  const pixelVal        = document.getElementById('blur-pixel-val');
+  const brightnessSlider= document.getElementById('blur-brightness');
+  const brightnessVal   = document.getElementById('blur-brightness-val');
+  const contrastSlider  = document.getElementById('blur-contrast');
+  const contrastVal     = document.getElementById('blur-contrast-val');
+  const grayscaleCheck  = document.getElementById('blur-grayscale');
+
+  // Hidden working canvas
+  const workCanvas = document.createElement('canvas');
+  const workCtx    = workCanvas.getContext('2d');
+
+  let origImage    = null;
+  let origFileName = 'image';
+  let origFileSize = 0;
+  let currentFmt   = 'jpeg';
+
+  // Format buttons
+  document.querySelectorAll('#blur-fmt-btns .blur-fmt').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#blur-fmt-btns .blur-fmt').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentFmt = btn.dataset.fmt;
+      processImage();
+    });
+  });
+
+  // Sliders — update label + realtime preview
+  qualSlider.addEventListener('input',       function() { qualVal.textContent       = this.value + '%';  processImage(); });
+  pixelSlider.addEventListener('input',      function() { pixelVal.textContent      = this.value + 'px'; processImage(); });
+  brightnessSlider.addEventListener('input', function() { brightnessVal.textContent = this.value + '%';  processImage(); });
+  contrastSlider.addEventListener('input',   function() { contrastVal.textContent   = this.value + '%';  processImage(); });
+  grayscaleCheck.addEventListener('change',  () => processImage());
+
+  // Drop zone
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('drag-over');
+    const file = e.dataTransfer.files[0];
+    if (file && file.type.startsWith('image/')) loadFile(file);
+  });
+  dropZone.addEventListener('click', e => {
+    if (e.target.tagName !== 'SPAN') fileInput.click();
+  });
+  fileInput.addEventListener('change', () => { if (fileInput.files[0]) loadFile(fileInput.files[0]); });
+
+  function loadFile(file) {
+    if (file.size > 10 * 1024 * 1024) { showHubToast('File terlalu besar (maks. 10MB)'); return; }
+    origFileName = file.name.replace(/\.[^.]+$/, '');
+    origFileSize = file.size;
+    sizeOrig.textContent = (file.size / 1024).toFixed(1) + ' KB';
+
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        origImage = img;
+        prevOrig.src = e.target.result;
+        controls.style.display = 'block';
+        processImage();
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  function processImage() {
+    if (!origImage) return;
+
+    const quality    = parseInt(qualSlider.value) / 100;   // 0.01–1.0 untuk JPEG
+    const pixelSize  = parseInt(pixelSlider.value);
+    const brightness = parseInt(brightnessSlider.value) / 100;
+    const contrast   = parseInt(contrastSlider.value) / 100;
+    const grayscale  = grayscaleCheck.checked;
+
+    const W = origImage.naturalWidth;
+    const H = origImage.naturalHeight;
+
+    workCanvas.width  = W;
+    workCanvas.height = H;
+
+    // 1. Gambar original ke canvas
+    workCtx.filter = 'none';
+    workCtx.drawImage(origImage, 0, 0, W, H);
+
+    // 2. Pixelate — scale down lalu scale up tanpa smoothing
+    if (pixelSize > 1) {
+      const pW = Math.max(1, Math.floor(W / pixelSize));
+      const pH = Math.max(1, Math.floor(H / pixelSize));
+      const tmp = document.createElement('canvas');
+      tmp.width = pW; tmp.height = pH;
+      const tctx = tmp.getContext('2d');
+      tctx.imageSmoothingEnabled = false;
+      tctx.drawImage(workCanvas, 0, 0, pW, pH);
+      workCtx.imageSmoothingEnabled = false;
+      workCtx.drawImage(tmp, 0, 0, pW, pH, 0, 0, W, H);
+      workCtx.imageSmoothingEnabled = true;
+    }
+
+    // 3. Brightness / Contrast / Grayscale via pixel manipulation
+    if (brightness !== 1 || contrast !== 1 || grayscale) {
+      const imgData = workCtx.getImageData(0, 0, W, H);
+      const d = imgData.data;
+      // Contrast formula: (pixel - 128) * contrast + 128
+      for (let i = 0; i < d.length; i += 4) {
+        let r = d[i], g = d[i+1], b = d[i+2];
+        // Brightness
+        r *= brightness; g *= brightness; b *= brightness;
+        // Contrast
+        r = (r - 128) * contrast + 128;
+        g = (g - 128) * contrast + 128;
+        b = (b - 128) * contrast + 128;
+        // Grayscale
+        if (grayscale) { const lum = 0.299*r + 0.587*g + 0.114*b; r = g = b = lum; }
+        d[i]   = Math.min(255, Math.max(0, r));
+        d[i+1] = Math.min(255, Math.max(0, g));
+        d[i+2] = Math.min(255, Math.max(0, b));
+      }
+      workCtx.putImageData(imgData, 0, 0);
+    }
+
+    // 4. Export ke dataURL dengan kualitas JPEG rendah (efek burik utama)
+    const mime = currentFmt === 'png' ? 'image/png' : ('image/' + currentFmt);
+    // PNG tidak support quality, jadi untuk PNG kita re-encode via JPEG dulu lalu decode
+    // supaya efek kompresi tetap terasa
+    let exportMime = mime;
+    let exportQuality = quality;
+    if (currentFmt === 'png') {
+      // Untuk PNG: encode ke JPEG dulu dengan quality rendah, decode, lalu simpan sebagai PNG
+      const jpegUrl = workCanvas.toDataURL('image/jpeg', quality);
+      const tmpImg = new Image();
+      tmpImg.onload = () => {
+        const tmp2 = document.createElement('canvas');
+        tmp2.width = W; tmp2.height = H;
+        tmp2.getContext('2d').drawImage(tmpImg, 0, 0);
+        const finalUrl = tmp2.toDataURL('image/png');
+        prevOut.src = finalUrl;
+        estimateSize(finalUrl);
+      };
+      tmpImg.src = jpegUrl;
+      return;
+    }
+
+    const dataUrl = workCanvas.toDataURL(exportMime, exportQuality);
+    prevOut.src = dataUrl;
+    estimateSize(dataUrl);
+  }
+
+  function estimateSize(dataUrl) {
+    // Estimasi ukuran dari base64
+    const base64 = dataUrl.split(',')[1] || '';
+    const bytes = Math.round(base64.length * 0.75);
+    sizeOut.textContent = (bytes / 1024).toFixed(1) + ' KB';
+  }
+
+  downloadBtn.addEventListener('click', () => {
+    if (!prevOut.src || prevOut.src === window.location.href) return;
+    const ext = currentFmt === 'jpeg' ? 'jpg' : currentFmt;
+    const a = document.createElement('a');
+    a.href = prevOut.src;
+    a.download = origFileName + '_burik.' + ext;
+    a.click();
+  });
+
+  resetBtn.addEventListener('click', () => {
+    origImage = null;
+    fileInput.value = '';
+    prevOrig.src = '';
+    prevOut.src = '';
+    controls.style.display = 'none';
+    qualSlider.value = 50;        qualVal.textContent = '50%';
+    pixelSlider.value = 1;        pixelVal.textContent = '1px';
+    brightnessSlider.value = 100; brightnessVal.textContent = '100%';
+    contrastSlider.value = 100;   contrastVal.textContent = '100%';
+    grayscaleCheck.checked = false;
+    sizeOrig.textContent = '0 KB';
+    sizeOut.textContent  = '0 KB';
+  });
+})();
+
+/* ============================================================
+   TOOL 8  FRAME TO TIMECODE CONVERTER
+   ============================================================ */
+(function() {
+  const framesInput = document.getElementById('ftc-frames');
+  const fpsSelect   = document.getElementById('ftc-fps');
+  const tcOut       = document.getElementById('ftc-timecode');
+  const secOut      = document.getElementById('ftc-seconds');
+  const breakdown   = document.getElementById('ftc-breakdown');
+
+  // Sync pill buttons → hidden select
+  document.querySelectorAll('#ftc-fps-group [data-fps]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#ftc-fps-group [data-fps]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      fpsSelect.value = btn.dataset.fps;
+      calc();
+    });
+  });
+
+  function calc() {
+    const frames = parseInt(framesInput.value) || 0;
+    const fps    = parseInt(fpsSelect.value) || 30;
+    const totalSec = frames / fps;
+
+    const hh = Math.floor(totalSec / 3600);
+    const mm = Math.floor((totalSec % 3600) / 60);
+    const ss = Math.floor(totalSec % 60);
+    const ff = frames % fps;
+
+    tcOut.textContent = [hh, mm, ss, ff].map(v => String(v).padStart(2, '0')).join(':');
+    secOut.textContent = totalSec.toFixed(3) + 's';
+
+    const parts = [];
+    if (hh) parts.push(hh + ' jam');
+    if (mm) parts.push(mm + ' menit');
+    if (ss) parts.push(ss + ' detik');
+    if (ff) parts.push(ff + ' frame sisa');
+    breakdown.textContent = parts.length ? parts.join(', ') : '0 detik';
+  }
+
+  framesInput.addEventListener('input', calc);
+  fpsSelect.addEventListener('change', calc);
+  calc();
+})();
+
+/* ============================================================
+   TOOL 9  ASPECT RATIO CALCULATOR
+   ============================================================ */
+(function() {
+  const wInput  = document.getElementById('ar-width');
+  const hInput  = document.getElementById('ar-height');
+  const visual  = document.getElementById('ar-visual');
+  const ratioOut  = document.getElementById('ar-ratio-out');
+  const widthOut  = document.getElementById('ar-width-out');
+  const heightOut = document.getElementById('ar-height-out');
+  const pixelsOut = document.getElementById('ar-pixels-out');
+
+  function gcd(a, b) { return b === 0 ? a : gcd(b, a % b); }
+
+  function update() {
+    const w = parseInt(wInput.value);
+    const h = parseInt(hInput.value);
+    if (!w || !h || w <= 0 || h <= 0) {
+      ratioOut.textContent = '—'; widthOut.textContent = '—';
+      heightOut.textContent = '—'; pixelsOut.textContent = '—';
+      visual.innerHTML = '';
+      return;
+    }
+    const d = gcd(w, h);
+    const rw = w / d, rh = h / d;
+    ratioOut.textContent  = rw + ':' + rh;
+    widthOut.textContent  = w + 'px';
+    heightOut.textContent = h + 'px';
+    pixelsOut.textContent = (w * h).toLocaleString('id-ID') + ' px';
+
+    // Visual box — max 80px on longest side
+    const MAX = 80;
+    let bw, bh;
+    if (w >= h) { bw = MAX; bh = Math.round(MAX * h / w); }
+    else        { bh = MAX; bw = Math.round(MAX * w / h); }
+    bw = Math.max(bw, 12); bh = Math.max(bh, 12);
+    visual.innerHTML = `<div style="width:${bw}px;height:${bh}px;background:var(--bg-2);border:1.5px solid var(--border-strong);border-radius:4px"></div>`;
+  }
+
+  wInput.addEventListener('input', () => {
+    const ratio = document.querySelector('#ar-presets .bitrate-pill.active')?.dataset.ratio;
+    if (ratio && wInput.value) {
+      const [rw, rh] = ratio.split(':').map(Number);
+      hInput.value = Math.round(parseInt(wInput.value) * rh / rw);
+    }
+    update();
+  });
+
+  hInput.addEventListener('input', () => {
+    const ratio = document.querySelector('#ar-presets .bitrate-pill.active')?.dataset.ratio;
+    if (ratio && hInput.value) {
+      const [rw, rh] = ratio.split(':').map(Number);
+      wInput.value = Math.round(parseInt(hInput.value) * rw / rh);
+    }
+    update();
+  });
+
+  document.querySelectorAll('#ar-presets [data-ratio]').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('#ar-presets [data-ratio]').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const [rw, rh] = btn.dataset.ratio.split(':').map(Number);
+      if (wInput.value) {
+        hInput.value = Math.round(parseInt(wInput.value) * rh / rw);
+      } else if (hInput.value) {
+        wInput.value = Math.round(parseInt(hInput.value) * rw / rh);
+      } else {
+        // Default 1920 for 16:9
+        wInput.value = 1920;
+        hInput.value = Math.round(1920 * rh / rw);
+      }
+      update();
+    });
+  });
+})();
+
+/* ============================================================
+   TOOL 10  COLOR CONTRAST CHECKER
+   ============================================================ */
+(function() {
+  const fgPicker = document.getElementById('cc-fg');
+  const bgPicker = document.getElementById('cc-bg');
+  const fgHex    = document.getElementById('cc-fg-hex');
+  const bgHex    = document.getElementById('cc-bg-hex');
+  const fgPreview = document.getElementById('cc-fg-preview');
+  const bgPreview = document.getElementById('cc-bg-preview');
+  const preview  = document.getElementById('cc-preview');
+  const ratioEl  = document.getElementById('cc-ratio');
+  const badgeEl  = document.getElementById('cc-badge');
+  const aaNormal = document.getElementById('cc-aa-normal');
+  const aaLarge  = document.getElementById('cc-aa-large');
+  const aaaEl    = document.getElementById('cc-aaa');
+
+  function hexToRgb(hex) {
+    const h = hex.replace('#','');
+    const full = h.length===3 ? h.split('').map(c=>c+c).join('') : h;
+    return [parseInt(full.slice(0,2),16),parseInt(full.slice(2,4),16),parseInt(full.slice(4,6),16)];
+  }
+  function linearize(c){const s=c/255;return s<=0.04045?s/12.92:Math.pow((s+0.055)/1.055,2.4);}
+  function luminance([r,g,b]){return 0.2126*linearize(r)+0.7152*linearize(g)+0.0722*linearize(b);}
+  function contrastRatio(h1,h2){
+    const l1=luminance(hexToRgb(h1)),l2=luminance(hexToRgb(h2));
+    return (Math.max(l1,l2)+0.05)/(Math.min(l1,l2)+0.05);
+  }
+  function isValidHex(h){return /^#[0-9a-fA-F]{6}$/.test(h);}
+  function rgbToHex(r,g,b){return '#'+[r,g,b].map(v=>v.toString(16).padStart(2,'0')).join('');}
+
+  function run() {
+    const fg=fgHex.value.trim(), bg=bgHex.value.trim();
+    if(!isValidHex(fg)||!isValidHex(bg)) return;
+    const ratio=contrastRatio(fg,bg);
+    preview.style.background=bg; preview.style.color=fg;
+    ratioEl.textContent=ratio.toFixed(2)+':1';
+    const pass=(v,min)=>v>=min?'<span style="color:#4ade80">✓ Pass</span>':'<span style="color:#ef4444">✗ Fail</span>';
+    aaNormal.innerHTML=pass(ratio,4.5);
+    aaLarge.innerHTML=pass(ratio,3);
+    aaaEl.innerHTML=pass(ratio,7);
+    let level,bg2,color;
+    if(ratio>=7){level='AAA';bg2='rgba(74,222,128,0.12)';color='#4ade80';}
+    else if(ratio>=4.5){level='AA';bg2='rgba(96,165,250,0.12)';color='#60a5fa';}
+    else if(ratio>=3){level='AA Large';bg2='rgba(251,191,36,0.12)';color='#fbbf24';}
+    else{level='Fail';bg2='rgba(239,68,68,0.12)';color='#ef4444';}
+    badgeEl.textContent=level;
+    badgeEl.style.cssText=`padding:6px 14px;border-radius:999px;font-size:12px;font-weight:700;letter-spacing:0.5px;background:${bg2};color:${color};border:1px solid ${color}40`;
+  }
+
+  // Native color picker sync
+  fgPicker.addEventListener('input', () => {
+    fgHex.value = fgPicker.value;
+    if(fgPreview) fgPreview.style.background = fgPicker.value;
+    run();
+  });
+  bgPicker.addEventListener('input', () => {
+    bgHex.value = bgPicker.value;
+    if(bgPreview) bgPreview.style.background = bgPicker.value;
+    run();
+  });
+  fgHex.addEventListener('input', function() {
+    if(isValidHex(this.value)){
+      fgPicker.value=this.value;
+      if(fgPreview) fgPreview.style.background=this.value;
+      run();
+    }
+  });
+  bgHex.addEventListener('input', function() {
+    if(isValidHex(this.value)){
+      bgPicker.value=this.value;
+      if(bgPreview) bgPreview.style.background=this.value;
+      run();
+    }
+  });
+
+  // ── Pick from image ──
+  const imgDrop   = document.getElementById('ccImgDrop');
+  const imgInput  = document.getElementById('ccImgInput');
+  const imgWrap   = document.getElementById('ccImgWrap');
+  const imgCanvas = document.getElementById('ccImgCanvas');
+  const magnifier = document.getElementById('ccImgMagnifier');
+  const pickedRow = document.getElementById('ccPickedColor');
+  const pickedSwatch = document.getElementById('ccPickedSwatch');
+  const pickedHex = document.getElementById('ccPickedHex');
+  let imgCtx = null, imgW = 0, imgH = 0;
+  let lastPickedHex = '#ffffff';
+
+  function loadImageToCanvas(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        imgW = img.naturalWidth; imgH = img.naturalHeight;
+        imgCanvas.width = imgW; imgCanvas.height = imgH;
+        imgCtx = imgCanvas.getContext('2d');
+        imgCtx.drawImage(img, 0, 0);
+        imgWrap.style.display = 'block';
+        pickedRow.style.display = 'flex';
+        document.getElementById('ccImgDropLabel').textContent = file.name;
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  }
+
+  imgDrop.addEventListener('dragover', e => { e.preventDefault(); imgDrop.classList.add('drag-over'); });
+  imgDrop.addEventListener('dragleave', () => imgDrop.classList.remove('drag-over'));
+  imgDrop.addEventListener('drop', e => {
+    e.preventDefault(); imgDrop.classList.remove('drag-over');
+    loadImageToCanvas(e.dataTransfer.files[0]);
+  });
+  imgInput.addEventListener('change', () => loadImageToCanvas(imgInput.files[0]));
+
+  function getPixelAt(e) {
+    if (!imgCtx) return null;
+    const rect = imgCanvas.getBoundingClientRect();
+    const scaleX = imgW / rect.width;
+    const scaleY = imgH / rect.height;
+    const x = Math.floor((e.clientX - rect.left) * scaleX);
+    const y = Math.floor((e.clientY - rect.top) * scaleY);
+    const px = imgCtx.getImageData(Math.max(0,Math.min(x,imgW-1)), Math.max(0,Math.min(y,imgH-1)), 1, 1).data;
+    return { x, y, r: px[0], g: px[1], b: px[2], hex: rgbToHex(px[0],px[1],px[2]) };
+  }
+
+  imgCanvas.addEventListener('mousemove', e => {
+    const px = getPixelAt(e);
+    if (!px) return;
+    const rect = imgCanvas.getBoundingClientRect();
+    const cx = e.clientX - rect.left, cy = e.clientY - rect.top;
+    magnifier.style.display = 'block';
+    magnifier.style.left = (cx - 30) + 'px';
+    magnifier.style.top  = (cy - 30) + 'px';
+    magnifier.style.background = px.hex;
+    magnifier.style.border = `2px solid ${px.hex}`;
+    lastPickedHex = px.hex;
+    pickedSwatch.style.background = px.hex;
+    pickedHex.textContent = px.hex;
+  });
+  imgCanvas.addEventListener('mouseleave', () => { magnifier.style.display = 'none'; });
+  imgCanvas.addEventListener('click', e => {
+    const px = getPixelAt(e);
+    if (!px) return;
+    lastPickedHex = px.hex;
+    pickedSwatch.style.background = px.hex;
+    pickedHex.textContent = px.hex;
+  });
+
+  document.getElementById('ccApplyFg')?.addEventListener('click', () => {
+    fgHex.value = lastPickedHex;
+    fgPicker.value = lastPickedHex;
+    if(fgPreview) fgPreview.style.background = lastPickedHex;
+    run();
+  });
+  document.getElementById('ccApplyBg')?.addEventListener('click', () => {
+    bgHex.value = lastPickedHex;
+    bgPicker.value = lastPickedHex;
+    if(bgPreview) bgPreview.style.background = lastPickedHex;
+    run();
+  });
+
+  run();
+})();
+
+/* ============================================================
+   TOOL 11  MEDIA DOWNLOADER (embedded)
+   ============================================================ */
+(function() {
+  const VIDEO_OPT = [{q:'1080p',size:'~85 MB'},{q:'720p',size:'~45 MB'},{q:'480p',size:'~22 MB'},{q:'360p',size:'~12 MB'}];
+  const AUDIO_OPT = [{q:'320kbps',size:'~12 MB'},{q:'192kbps',size:'~7 MB'},{q:'128kbps',size:'~5 MB'}];
+
+  const input      = document.getElementById('dlInput2');
+  const pasteBtn   = document.getElementById('dlPasteBtn2');
+  const fmtVideo   = document.getElementById('dl2FmtVideo');
+  const fmtAudio   = document.getElementById('dl2FmtAudio');
+  const loading    = document.getElementById('dl2Loading');
+  const loadTxt    = document.getElementById('dl2LoadingText');
+  const progressBar= document.getElementById('dl2ProgressBar');
+  const results    = document.getElementById('dl2Results');
+  const thumbEl    = document.getElementById('dl2Thumb');
+  const titleEl    = document.getElementById('dl2ResultTitle');
+  const platformEl = document.getElementById('dl2Platform');
+  const optList    = document.getElementById('dl2OptionsList');
+
+  let currentFmt = 'video';
+  let loadTimer  = null;
+  let analyzeTimer = null;
+
+  // ── Format toggle ──
+  function setFmt(fmt) {
+    currentFmt = fmt;
+    if (fmt === 'video') {
+      fmtVideo.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--text);color:var(--bg);border:1.5px solid var(--text);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
+      fmtAudio.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--bg-3);color:var(--text-3);border:1.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
+    } else {
+      fmtAudio.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--text);color:var(--bg);border:1.5px solid var(--text);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
+      fmtVideo.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--bg-3);color:var(--text-3);border:1.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
+    }
+    // Re-render options if results visible
+    if (results.style.display !== 'none') renderOptions();
+  }
+  fmtVideo?.addEventListener('click', () => setFmt('video'));
+  fmtAudio?.addEventListener('click', () => setFmt('audio'));
+
+  // ── Paste button ──
+  pasteBtn?.addEventListener('click', () => {
+    if (navigator.clipboard?.readText) {
+      navigator.clipboard.readText().then(t => {
+        input.value = t;
+        input.dispatchEvent(new Event('input'));
+      }).catch(() => input.focus());
+    } else { input.focus(); }
+  });
+
+  // ── Detect platform & video ID ──
+  function detectPlatform(url) {
+    if (/youtube\.com|youtu\.be/.test(url)) return 'YouTube';
+    if (/tiktok\.com/.test(url)) return 'TikTok';
+    if (/instagram\.com/.test(url)) return 'Instagram';
+    if (/twitter\.com|x\.com/.test(url)) return 'Twitter / X';
+    if (/facebook\.com/.test(url)) return 'Facebook';
+    return null;
+  }
+
+  function getYouTubeId(url) {
+    const m = url.match(/(?:youtu\.be\/|youtube\.com\/(?:watch\?v=|shorts\/|embed\/))([A-Za-z0-9_-]{11})/);
+    return m ? m[1] : null;
+  }
+
+  function isValidUrl(url) {
+    try { new URL(url); return true; } catch { return false; }
+  }
+
+  // ── Clear results ──
+  function clearResults() {
+    clearTimeout(loadTimer);
+    loading.style.display = 'none';
+    results.style.display = 'none';
+    progressBar.style.width = '0';
+    thumbEl.innerHTML = '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>';
+    thumbEl.style.background = 'var(--bg-3)';
+    titleEl.textContent = '—';
+    platformEl.textContent = '—';
+    optList.innerHTML = '';
+  }
+
+  // ── Render quality options ──
+  function renderOptions() {
+    const opts = currentFmt === 'video' ? VIDEO_OPT : AUDIO_OPT;
+    optList.innerHTML = opts.map(o => `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color var(--transition)" onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:13px;font-weight:700;color:var(--text)">${o.q}</span>
+          <span style="font-size:11px;color:var(--text-3)">${o.size}</span>
+        </div>
+        <button onclick="this.textContent='✓ Done';this.style.background='rgba(74,222,128,0.15)';this.style.color='#4ade80';this.style.borderColor='rgba(74,222,128,0.3)';setTimeout(()=>{this.textContent='Download';this.style.background='var(--text)';this.style.color='var(--bg)';this.style.borderColor='var(--text)'},2000)"
+          style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);cursor:pointer;transition:all .2s">Download</button>
+      </div>`).join('');
+  }
+
+  // ── Analyze URL ──
+  function analyze(url) {
+    if (!url || !isValidUrl(url)) { clearResults(); return; }
+    const platform = detectPlatform(url);
+    if (!platform) { clearResults(); return; }
+
+    clearResults();
+    loading.style.display = 'block';
+
+    const steps = [{p:'25%',m:'Mendeteksi platform…'},{p:'55%',m:'Mengambil info video…'},{p:'85%',m:'Menyiapkan opsi…'},{p:'100%',m:'Siap!'}];
+    let i = 0;
+    function step() {
+      if (i >= steps.length) { finish(); return; }
+      progressBar.style.width = steps[i].p;
+      loadTxt.textContent = steps[i].m;
+      i++;
+      loadTimer = setTimeout(step, 500);
+    }
+
+    function finish() {
+      loading.style.display = 'none';
+
+      // Set platform
+      platformEl.textContent = platform;
+
+      // Set title (simulated — real title needs backend)
+      const titles = {
+        'YouTube': 'YouTube Video',
+        'TikTok': 'TikTok Video',
+        'Instagram': 'Instagram Reel',
+        'Twitter / X': 'Twitter Video',
+        'Facebook': 'Facebook Video',
+      };
+      titleEl.textContent = titles[platform] || 'Media';
+
+      // Thumbnail — YouTube only (free, no API key needed)
+      const ytId = getYouTubeId(url);
+      if (ytId) {
+        const img = document.createElement('img');
+        img.src = `https://img.youtube.com/vi/${ytId}/hqdefault.jpg`;
+        img.alt = 'Thumbnail';
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;display:block';
+        img.onerror = () => { /* keep placeholder */ };
+        thumbEl.innerHTML = '';
+        thumbEl.style.background = '#000';
+        thumbEl.appendChild(img);
+        // Try to get title from oEmbed (no API key, CORS-safe)
+        fetch(`https://www.youtube.com/oembed?url=${encodeURIComponent(url)}&format=json`)
+          .then(r => r.json())
+          .then(d => { if (d.title) titleEl.textContent = d.title; })
+          .catch(() => {});
+      }
+
+      renderOptions();
+      results.style.display = 'block';
+    }
+
+    step();
+  }
+
+  // ── Auto-analyze on input ──
+  input?.addEventListener('input', () => {
+    const url = input.value.trim();
+    clearTimeout(analyzeTimer);
+    if (!url) { clearResults(); return; }
+    // Debounce 600ms — analyze after user stops typing/pasting
+    analyzeTimer = setTimeout(() => analyze(url), 600);
+  });
+
+  // ── Auto-clear when input cleared ──
+  input?.addEventListener('keydown', e => {
+    if (e.key === 'Backspace' || e.key === 'Delete') {
+      setTimeout(() => { if (!input.value.trim()) clearResults(); }, 50);
+    }
+  });
+})();
+
+</script>
+</body>
+</html>

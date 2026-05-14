@@ -107,6 +107,30 @@
 </div>
 </div><!-- /page-content -->
 
+<!-- Mobile bottom tab bar (hidden on desktop) -->
+<nav class="dashboard-bottom-nav">
+  <div class="dashboard-bottom-nav-item active" data-section="overview">
+    <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+    <span>Overview</span>
+  </div>
+  <div class="dashboard-bottom-nav-item" data-section="purchased">
+    <svg viewBox="0 0 24 24"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+    <span>Presets</span>
+  </div>
+  <div class="dashboard-bottom-nav-item" data-section="orders">
+    <svg viewBox="0 0 24 24"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 01-2-2v-5a2 2 0 012-2h16a2 2 0 012 2v5a2 2 0 01-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg>
+    <span>Orders</span>
+  </div>
+  <div class="dashboard-bottom-nav-item" data-section="wishlist">
+    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
+    <span>Wishlist</span>
+  </div>
+  <div class="dashboard-bottom-nav-item" data-section="settings">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+    <span>Settings</span>
+  </div>
+</nav>
+
 <script type="module">
   import { initTheme, toggleTheme, startProgress, doneProgress, showToast } from './js/ui.js';
   import { initDashboard } from './js/auth.js';
@@ -114,17 +138,20 @@
   import { auth, db, doc, getDoc, onAuthStateChanged } from './js/firebase-config.js';
   import { initPageTransition } from './js/transition.js';
   import { initWaveBackground } from './js/animations.js';
+  import { initNavPill } from './js/navbar.js';
   window.toggleTheme = toggleTheme;
   initPageTransition();
   initWaveBackground();
-  startProgress(); initTheme(); initDashboard(); doneProgress();
+  startProgress(); initTheme(); initDashboard(); initNavPill();
+  doneProgress();
 
-  document.querySelectorAll('.dashboard-nav-item').forEach(item => {
+  document.querySelectorAll('.dashboard-nav-item, .dashboard-bottom-nav-item').forEach(item => {
     item.addEventListener('click', () => {
-      document.querySelectorAll('.dashboard-nav-item').forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
+      const section = item.dataset.section;
+      document.querySelectorAll('.dashboard-nav-item, .dashboard-bottom-nav-item').forEach(i => i.classList.remove('active'));
+      document.querySelectorAll(`[data-section="${section}"]`).forEach(i => i.classList.add('active'));
       document.querySelectorAll('.dashboard-section').forEach(s => s.classList.add('hidden'));
-      document.getElementById(`section-${item.dataset.section}`)?.classList.remove('hidden');
+      document.getElementById(`section-${section}`)?.classList.remove('hidden');
     });
   });
 
@@ -134,6 +161,34 @@
   // Wait for Firebase auth to restore session
   onAuthStateChanged(auth, async (fbUser) => {
     if (!fbUser) { window.location.href = 'login.html'; return; }
+
+    // ── Settings: pre-fill ──
+    const settingsName  = document.getElementById('settings-name');
+    const settingsEmail = document.getElementById('settings-email');
+    const settingsSave  = document.getElementById('settings-save');
+
+    if (settingsName) settingsName.value  = fbUser.displayName || fbUser.email?.split('@')[0] || '';
+    if (settingsEmail) settingsEmail.value = fbUser.email || '';
+
+    // Pastikan listener tidak di-attach lebih dari sekali
+    settingsSave?.replaceWith(settingsSave.cloneNode(true));
+    const freshSaveBtn = document.getElementById('settings-save');
+    freshSaveBtn?.addEventListener('click', async () => {
+      const newName = document.getElementById('settings-name')?.value.trim();
+      if (!newName) { showToast('Display name cannot be empty', 'error'); return; }
+      freshSaveBtn.disabled = true;
+      try {
+        const { updateProfile } = await import('./js/firebase-config.js');
+        await updateProfile(fbUser, { displayName: newName });
+        document.querySelector('.dashboard-user-name').textContent = newName;
+        showToast('Settings saved', 'success');
+      } catch (err) {
+        console.error('Settings save error:', err);
+        showToast('Failed to save settings', 'error');
+      } finally {
+        freshSaveBtn.disabled = false;
+      }
+    });
     // Load presets async
     fetchPresets().then(PRESETS => {
       // Stat counts from Firestore user doc
@@ -195,32 +250,7 @@
   window.downloadFree = () => {};
 
   // ── Settings: pre-fill + save ──
-  const settingsName  = document.getElementById('settings-name');
-  const settingsEmail = document.getElementById('settings-email');
-  const settingsSave  = document.getElementById('settings-save');
-
-  if (settingsName && settingsEmail) {
-    const fbUser = auth.currentUser;
-    if (fbUser) {
-      settingsName.value  = fbUser.displayName || fbUser.email?.split('@')[0] || '';
-      settingsEmail.value = fbUser.email || '';
-    }
-  }
-
-  settingsSave?.addEventListener('click', async () => {
-    const fbUser = auth.currentUser;
-    if (!fbUser) return;
-    const newName = settingsName?.value.trim();
-    if (!newName) return;
-    try {
-      const { updateProfile } = await import('./js/firebase-config.js');
-      await updateProfile(fbUser, { displayName: newName });
-      document.querySelector('.dashboard-user-name').textContent = newName;
-      showToast('Settings saved', 'success');
-    } catch {
-      showToast('Failed to save', 'error');
-    }
-  });
+  // Diletakkan di dalam onAuthStateChanged agar fbUser selalu valid
 </script>
 </body>
 </html>

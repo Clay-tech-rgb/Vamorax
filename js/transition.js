@@ -1,16 +1,44 @@
-// ===== PAGE FADE + BLUR TRANSITIONS =====
-// Blur lives on .page-content (a wrapper div), NOT on body.
-// body filter would break position:fixed for toast, navbar, cart, live chat.
+// ===== PAGE FADE + BLUR TRANSITIONS + LOADING OVERLAY =====
+
+function createLoader() {
+  const el = document.createElement('div');
+  el.className = 'page-loader';
+  el.id = 'pageLoader';
+  el.innerHTML = '<div class="dot-shuttle"></div>';
+  document.body.appendChild(el);
+  return el;
+}
+
+function getLoader() {
+  return document.getElementById('pageLoader') || createLoader();
+}
+
+function showLoader() {
+  getLoader().classList.add('visible');
+}
+
+function hideLoader() {
+  const loader = document.getElementById('pageLoader');
+  if (loader) loader.classList.remove('visible');
+}
 
 export function initPageTransition() {
-  // Fade body in
+  // Inject loader element early
+  createLoader();
+
+  // Show loader if page takes > 300ms to become ready (lag detection)
+  const lagTimer = setTimeout(showLoader, 300);
+
+  // Fade body in once ready
   requestAnimationFrame(() => {
     requestAnimationFrame(() => {
+      clearTimeout(lagTimer);
+      hideLoader();
       document.body.classList.add('page-ready');
     });
   });
 
-  // Intercept internal link clicks
+  // Intercept internal link clicks → show loader + fade out
   document.addEventListener('click', e => {
     const link = e.target.closest('a[href]');
     if (!link) return;
@@ -29,6 +57,7 @@ export function initPageTransition() {
     e.preventDefault();
     document.body.classList.remove('page-ready');
     document.body.classList.add('page-leaving');
+    showLoader();
     setTimeout(() => { window.location.href = href; }, 230);
   });
 }

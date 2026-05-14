@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Vamorax — Premium Alight Motion Presets</title>
-  <meta name="description" content="Premium Alight Motion presets. Starting from Rp 5.000." />
+  <meta name="description" content="Premium Alight Motion presets for content creators." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="css/main.css" />
@@ -45,6 +45,8 @@
     <li><a href="shop.html">Shop</a></li>
     <li><a href="free-presets.html">Free</a></li>
     <li><a href="tutorials.html">Tutorials</a></li>
+    <li><a href="edit-hub.html">Edit Hub</a></li>
+    <li><a href="membership.html">Membership</a></li>
     <li><a href="contact.html">Contact</a></li>
   </ul>
   <div class="navbar-actions">
@@ -92,6 +94,8 @@
   <a href="shop.html">Shop</a>
   <a href="free-presets.html">Free Presets</a>
   <a href="tutorials.html">Tutorials</a>
+  <a href="edit-hub.html">Edit Hub</a>
+  <a href="membership.html">Membership</a>
   <a href="contact.html">Contact</a>
 </div>
 
@@ -118,17 +122,17 @@
 <div class="page-content">
 
 <!-- HERO -->
-<section class="hero">
+<section class="hero" style="padding-bottom:116px">
   <div class="hero-noise"></div>
   <div class="hero-content">
     <div class="hero-eyebrow">Alight Motion Presets</div>
     <h1 class="hero-title" id="heroTitle">
       <span class="hero-line" data-text="Edit like a pro."></span>
-      <span class="hero-line hero-line-dim" data-text="For Rp 5.000."></span>
+      <span class="hero-line hero-line-dim" data-text="Preset Alight Motion."></span>
     </h1>
     <p class="hero-sub fade-up d2">
-      Premium presets for cinematic, velocity, and beat sync edits.
-      High-end visuals at an unbeatable price.
+      Premium presets for cinematic, velocity, dan beat sync edits.
+      Visual kelas atas, harga terjangkau.
     </p>
     <div class="hero-actions fade-up d3">
       <a href="shop.html" class="btn btn-primary btn-lg">Browse presets</a>
@@ -144,12 +148,33 @@
         <div class="hero-stat-label">Downloads</div>
       </div>
       <div class="hero-stat">
-        <div class="hero-stat-num">Rp 5K</div>
-        <div class="hero-stat-label">Per preset</div>
+        <div class="hero-stat-num">2</div>
+        <div class="hero-stat-label">Paket langganan</div>
       </div>
       <div class="hero-stat">
         <div class="hero-stat-num">3</div>
         <div class="hero-stat-label">Free presets</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Ticker berjalan -->
+  <div class="hero-ticker">
+    <div class="ticker-label">New</div>
+    <div class="ticker-track">
+      <div class="ticker-inner" id="tickerInner">
+        <span class="ticker-item">Preset baru tersedia setiap minggu</span>
+        <span class="ticker-item">Gratis 3 preset tanpa perlu bayar</span>
+        <span class="ticker-item">Semua preset kompatibel Alight Motion terbaru</span>
+        <span class="ticker-item">Download instan setelah pembelian</span>
+        <span class="ticker-item">Starter · Elite Pass — pilih paket kamu</span>
+        <span class="ticker-item">Velocity · Cinematic · Beat Sync</span>
+        <span class="ticker-item">Preset baru tersedia setiap minggu</span>
+        <span class="ticker-item">Gratis 3 preset tanpa perlu bayar</span>
+        <span class="ticker-item">Semua preset kompatibel Alight Motion terbaru</span>
+        <span class="ticker-item">Download instan setelah pembelian</span>
+        <span class="ticker-item">Starter · Elite Pass — pilih paket kamu</span>
+        <span class="ticker-item">Velocity · Cinematic · Beat Sync</span>
       </div>
     </div>
   </div>
@@ -185,7 +210,7 @@
           <h2 class="section-title fade-up">Start for free</h2>
           <a href="free-presets.html" class="btn btn-ghost btn-sm">See all free</a>
         </div>
-        <p class="section-sub" style="margin-top:8px">Three premium presets, no payment required.</p>
+        <p class="section-sub" style="margin-top:8px">Free presets, no payment required.</p>
       </div>
       <div class="preset-grid" id="freePresetsGrid"></div>
     </div>
@@ -254,6 +279,7 @@
         <a href="shop.html?filter=velocity">Velocity</a>
         <a href="shop.html?filter=beat-sync">Beat Sync</a>
         <a href="free-presets.html">Free Presets</a>
+        <a href="membership.html">Membership</a>
       </div>
     </div>
     <div>
@@ -301,14 +327,11 @@
 </div>
 
 <script type="module">
-  import { initIntro } from './js/intro.js';
-  initIntro(); // runs immediately before anything else
-
   import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav, initHorizontalScroll, initComparisonSliders, initLiveChat } from './js/ui.js';
   import { initCartSidebar } from './js/cart.js';
   import { fetchPresets, fetchFreePresets, fetchTrendingPresets, renderPresetCard, renderSkeletonCards } from './js/shop.js';
   import { updateNavAuth } from './js/auth.js';
-  import { initNavPill } from './js/navbar.js';
+  import { initNavPill, initNotifDot } from './js/navbar.js';
   import { initPageTransition } from './js/transition.js';
   import { initCharReveal } from './js/animations.js';
   import { disableConsoleInProd } from './js/security.js';
@@ -327,6 +350,7 @@
   initLiveChat();
   updateNavAuth();
   initNavPill();
+  initNotifDot();
   doneProgress();
 
   // Hero text animation on load — per-letter split
@@ -397,7 +421,20 @@
   if (freeGrid) {
     freeGrid.innerHTML = renderSkeletonCards(3);
     fetchFreePresets().then(presets => {
-      freeGrid.innerHTML = presets.map(p => renderPresetCard(p)).join('');
+      freeGrid.innerHTML = presets.map(p => {
+        const card = renderPresetCard(p);
+        return card.replace(
+          '<button class="wishlist-btn"',
+          `<div class="preset-card-lock" style="display:none;position:absolute;inset:0;background:rgba(0,0,0,0.55);backdrop-filter:blur(2px);align-items:center;justify-content:center;border-radius:inherit;pointer-events:none;z-index:2"><svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.85)" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg></div><button class="wishlist-btn"`
+        );
+      }).join('');
+      // Apply lock state based on auth
+      import('./js/firebase-config.js').then(({ auth, onAuthStateChanged }) => {
+        onAuthStateChanged(auth, user => {
+          freeGrid.querySelectorAll('.preset-card-lock').forEach(el => { el.style.display = user ? 'none' : 'flex'; });
+          freeGrid.querySelectorAll('.free-preset-actions').forEach(el => { el.style.visibility = user ? 'visible' : 'hidden'; });
+        });
+      });
     });
   }
 
@@ -406,9 +443,16 @@
       const p = PRESETS.find(x => x.id === id); if (p) addToCart(p);
     });
   };
-  window.downloadFree = () => {
-    import('./js/ui.js').then(({ showToast }) => showToast('Please sign in to download', 'info'));
-    setTimeout(() => window.location.href = 'login.html', 1200);
+  window.downloadFree = (id, url) => {
+    import('./js/firebase-config.js').then(({ auth }) => {
+      if (!auth.currentUser) {
+        import('./js/ui.js').then(({ showToast }) => showToast('Please sign in to download', 'info'));
+        setTimeout(() => window.location.href = 'login.html', 1200);
+        return;
+      }
+      if (url) window.open(url, '_blank');
+      else import('./js/ui.js').then(({ showToast }) => showToast('Download starting', 'success'));
+    });
   };
 </script>
 </body>

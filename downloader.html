@@ -1,0 +1,439 @@
+﻿<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8" /><link rel="icon" type="image/png" href="logo Vm.png" /><meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Downloader  Vamorax</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:ital,opsz,wght@0,14..32,300..900;1,14..32,300..900&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/main.css" />
+  <script>history.replaceState(null,'','/downloader')</script>
+  <style>
+    .dl-hero{text-align:center;padding:80px 20px 48px}
+    .dl-eyebrow{font-size:11px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-3);margin-bottom:16px}
+    .dl-title{font-size:clamp(28px,5vw,52px);font-weight:800;letter-spacing:-1.5px;margin-bottom:14px;line-height:1.1}
+    .dl-sub{font-size:15px;color:var(--text-2);max-width:440px;margin:0 auto;line-height:1.65}
+    .dl-card{max-width:640px;margin:0 auto 48px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:32px}
+    .dl-secure{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:999px;background:rgba(74,222,128,0.08);border:1px solid rgba(74,222,128,0.2);font-size:11px;font-weight:600;color:#4ade80;margin-bottom:24px}
+    .dl-secure-dot{width:6px;height:6px;border-radius:50%;background:#4ade80;animation:notif-pulse 2s ease-in-out infinite}
+    .dl-input-wrap{position:relative;margin-bottom:20px}
+    .dl-input{width:100%;padding:14px 90px 14px 16px;background:var(--bg-3);border:1.5px solid var(--border);border-radius:var(--radius-md);font-size:14px;color:var(--text);font-family:var(--font);transition:border-color .2s,box-shadow .2s;outline:none}
+    .dl-input::placeholder{color:var(--text-3)}
+    .dl-input:focus{border-color:var(--border-strong);box-shadow:0 0 0 3px rgba(255,255,255,0.06)}
+    .dl-paste-btn{position:absolute;right:8px;top:50%;transform:translateY(-50%);padding:6px 12px;font-size:12px;font-weight:600;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);color:var(--text-2);cursor:pointer;transition:background var(--transition),color var(--transition)}
+    .dl-paste-btn:hover{background:var(--surface-hover);color:var(--text)}
+    .dl-format-row{display:flex;gap:8px;margin-bottom:16px}
+    .dl-fmt-btn{flex:1;padding:9px 16px;font-size:13px;font-weight:600;background:var(--bg-3);border:1.5px solid var(--border);border-radius:var(--radius-md);color:var(--text-3);cursor:pointer;transition:all .15s;display:flex;align-items:center;justify-content:center;gap:7px}
+    .dl-fmt-btn:hover{border-color:var(--border-strong);color:var(--text-2)}
+    .dl-fmt-btn.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .dl-quality-row{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:24px}
+    .dl-chip{padding:5px 12px;font-size:11px;font-weight:700;background:var(--surface);border:1px solid var(--border);border-radius:999px;color:var(--text-3);cursor:pointer;transition:all .15s}
+    .dl-chip:hover{border-color:var(--border-strong);color:var(--text-2)}
+    .dl-chip.active{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .dl-btn{width:100%;padding:14px;font-size:14px;font-weight:700;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:opacity .2s,transform .15s}
+    .dl-btn:hover{opacity:.88;transform:translateY(-1px)}
+    .dl-btn:active{transform:translateY(0)}
+    .dl-btn:disabled{opacity:.5;cursor:not-allowed;transform:none}
+    .dl-platforms{display:flex;align-items:center;justify-content:center;gap:16px;margin-top:20px;flex-wrap:wrap}
+    .dl-platforms-label{font-size:11px;color:var(--text-3);letter-spacing:.5px;text-transform:uppercase;font-weight:500}
+    .dl-platform-icons{display:flex;gap:14px;align-items:center}
+    .dl-platform-icon{opacity:.3;transition:opacity .2s;display:flex;align-items:center;color:var(--text)}
+    .dl-platform-icon:hover{opacity:.65}
+    .dl-loading{display:none;margin-top:20px;background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:20px}
+    .dl-loading.show{display:block}
+    .dl-loading-label{font-size:12px;color:var(--text-2);margin-bottom:10px;display:flex;align-items:center;gap:8px}
+    .dl-spinner{width:12px;height:12px;border-radius:50%;border:2px solid var(--border-strong);border-top-color:var(--text);animation:dl-spin .7s linear infinite;flex-shrink:0}
+    @keyframes dl-spin{to{transform:rotate(360deg)}}
+    .dl-progress-track{height:3px;background:var(--border);border-radius:999px;overflow:hidden;margin-bottom:12px}
+    .dl-progress-bar{height:100%;background:var(--text);border-radius:999px;width:0;transition:width .3s ease}
+    .dl-cancel-btn{font-size:12px;color:var(--text-3);background:none;border:none;cursor:pointer;padding:0;transition:color var(--transition)}
+    .dl-cancel-btn:hover{color:var(--text-2)}
+    .dl-results{display:none;margin-top:20px}
+    .dl-results.show{display:block;animation:fadeInUp .3s ease}
+    .dl-result-card{background:var(--bg-3);border:1px solid var(--border);border-radius:var(--radius-md);padding:16px;display:flex;gap:14px;align-items:flex-start;margin-bottom:16px}
+    .dl-result-thumb{width:72px;height:48px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);flex-shrink:0;display:flex;align-items:center;justify-content:center;color:var(--text-3)}
+    .dl-result-info{flex:1;min-width:0}
+    .dl-result-title{font-size:13px;font-weight:600;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .dl-result-meta{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+    .dl-platform-badge{font-size:10px;font-weight:700;letter-spacing:.5px;text-transform:uppercase;padding:2px 7px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-3)}
+    .dl-duration{font-size:11px;color:var(--text-3)}
+    .dl-options-title{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--text-3);margin-bottom:10px}
+    .dl-options-list{display:flex;flex-direction:column;gap:8px}
+    .dl-option-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color var(--transition)}
+    .dl-option-row:hover{border-color:var(--border-strong)}
+    .dl-option-left{display:flex;align-items:center;gap:10px}
+    .dl-option-quality{font-size:13px;font-weight:700;color:var(--text)}
+    .dl-option-size{font-size:11px;color:var(--text-3)}
+    .dl-option-btn{padding:6px 14px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:none;border-radius:var(--radius);cursor:pointer;transition:opacity .2s}
+    .dl-option-btn:hover{opacity:.8}
+    .dl-recent{max-width:640px;margin:0 auto 60px}
+    .dl-recent-title{font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:14px;display:flex;align-items:center;gap:8px}
+    .dl-recent-title::after{content:'';flex:1;height:1px;background:var(--border)}
+    .dl-recent-list{display:flex;flex-direction:column;gap:8px}
+    .dl-recent-item{display:flex;align-items:center;gap:12px;padding:12px 16px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color var(--transition)}
+    .dl-recent-item:hover{border-color:var(--border-strong)}
+    .dl-recent-icon{width:32px;height:32px;border-radius:var(--radius);background:var(--bg-3);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text-3)}
+    .dl-recent-info{flex:1;min-width:0}
+    .dl-recent-name{font-size:13px;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:2px}
+    .dl-recent-meta{font-size:11px;color:var(--text-3)}
+    .dl-recent-badge{font-size:10px;font-weight:700;padding:2px 8px;border-radius:999px;background:var(--surface);border:1px solid var(--border);color:var(--text-3);flex-shrink:0;white-space:nowrap}
+    .dl-recent-dl{width:30px;height:30px;border-radius:var(--radius);background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;color:var(--text-2);flex-shrink:0;transition:background var(--transition),color var(--transition)}
+    .dl-recent-dl:hover{background:var(--text);color:var(--bg);border-color:var(--text)}
+    .dl-animate{animation:fadeInUp .5s cubic-bezier(.16,1,.3,1) both}
+    .dl-animate.d1{animation-delay:.06s}
+    .dl-animate.d2{animation-delay:.13s}
+    .dl-animate.d3{animation-delay:.2s}
+    .dl-animate.d4{animation-delay:.28s}
+    @keyframes fadeInUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+    @media(max-width:680px){.dl-card{padding:20px 16px;margin:0 16px 32px}.dl-recent{margin:0 16px 48px}.dl-hero{padding:60px 16px 36px}}
+    /* Tools quick nav chips — sama persis dengan hub-tab di Tools page */
+    .dl-tool-chip {
+      flex-shrink: 0; padding: 8px 16px;
+      font-size: 12px; font-weight: 600; letter-spacing: 0.2px;
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius); color: var(--text-3);
+      text-decoration: none; white-space: nowrap;
+      transition: color .15s, background .15s, border-color .15s, box-shadow .15s;
+    }
+    .dl-tool-chip:hover { color: var(--text-2); background: var(--bg-3); border-color: var(--border-strong); }
+    .dl-tool-chip--active {
+      color: var(--text); background: var(--bg-3);
+      border-color: var(--border-strong);
+      box-shadow: inset 0 -2px 0 var(--text);
+    }
+  </style>
+</head>
+<body>
+<div id="top-progress"></div>
+<div class="page-ambient"><div class="ambient-orb ambient-orb-a"></div><div class="ambient-orb ambient-orb-b"></div></div>
+<nav class="navbar">
+  <a href="index.html" class="navbar-brand"><svg viewBox="0 0 100 100"><path d="M25 30 Q50 60 75 30"/><path d="M25 75 L25 60 Q35 58 50 75 Q65 58 75 60 L75 75"/></svg></a>
+  <ul class="navbar-nav">
+    <li><a href="index.html">Home</a></li><li><a href="shop.html">Shop</a></li>
+    <li><a href="free-presets.html">Free</a></li><li><a href="tutorials.html">Tutorials</a></li>
+    <li><a href="membership.html">Membership</a></li><li><a href="contact.html">Contact</a></li>
+  </ul>
+  <div class="navbar-actions">
+    <button class="icon-btn theme-toggle" onclick="window.toggleTheme()"></button>
+    <button class="icon-btn cart-btn"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="cart-badge">0</span></button>
+    <a href="login.html" class="btn btn-primary btn-sm nav-login-btn">Sign in</a>
+    <div class="nav-user-menu hidden"><a href="dashboard.html" class="icon-btn"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a></div>
+  </div>
+  <button class="hamburger" onclick="document.querySelector('.mobile-nav').classList.add('open')"><span></span><span></span><span></span></button>
+</nav>
+<div class="mobile-nav">
+  <button class="mobile-nav-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+  <div class="mobile-nav-icons">
+    <button class="mobile-nav-icon-btn cart-btn" title="Cart"><svg viewBox="0 0 24 24"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg><span class="cart-badge">0</span></button>
+    <a href="login.html" class="mobile-nav-icon-btn nav-login-btn" title="Sign in"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a>
+    <div class="mobile-nav-icon-btn nav-user-menu hidden"><a href="dashboard.html" style="display:flex;align-items:center;justify-content:center;width:100%;height:100%"><svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></a></div>
+  </div>
+  <a href="index.html">Home</a><a href="shop.html">Shop</a><a href="free-presets.html">Free Presets</a>
+  <a href="tutorials.html">Tutorials</a><a href="membership.html">Membership</a><a href="contact.html">Contact</a>
+</div>
+<div class="cart-overlay"></div>
+<div class="cart-sidebar">
+  <div class="cart-header"><span class="cart-title">Cart</span><button class="icon-btn cart-close"><svg viewBox="0 0 24 24"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button></div>
+  <div class="cart-items"></div>
+  <div class="cart-footer"><div class="cart-total"><span class="cart-total-label">Total</span><span class="cart-total-price">Rp 0</span></div><button class="btn btn-primary w-full cart-checkout-btn">Checkout</button></div>
+</div>
+
+<div class="page-content">
+
+<div class="dl-hero">
+  <div class="dl-eyebrow dl-animate">Vamorax Tools</div>
+  <h1 class="dl-title dl-animate d1">Media Downloader</h1>
+  <p class="dl-sub dl-animate d2">Download high-quality assets from any social platform instantly.</p>
+</div>
+
+<!-- Tools quick nav — sama style dengan tab bar di halaman Tools -->
+<div style="max-width:760px;margin:0 auto;padding:0 20px 32px">
+  <div style="position:relative">
+    <button id="dlNavLeft" style="position:absolute;left:0;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:var(--text-2);opacity:0;pointer-events:none;transition:opacity .2s,background .15s;box-shadow:0 2px 8px rgba(0,0,0,0.2)" aria-label="Scroll left">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div id="dlNavTrack" style="display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px;padding-right:48px;padding-left:4px;-webkit-overflow-scrolling:touch">
+      <a href="edit-hub.html?tab=palette" class="dl-tool-chip">Color Palette</a>
+      <a href="edit-hub.html?tab=bitrate" class="dl-tool-chip">Bitrate Calc</a>
+      <a href="edit-hub.html?tab=waveform" class="dl-tool-chip">Waveform</a>
+      <a href="edit-hub.html?tab=decorator" class="dl-tool-chip">Text Decorator</a>
+      <a href="edit-hub.html?tab=converter" class="dl-tool-chip">Image Converter</a>
+      <a href="edit-hub.html?tab=aratio" class="dl-tool-chip">Aspect Ratio</a>
+      <a href="edit-hub.html?tab=contrast" class="dl-tool-chip">Color Contrast</a>
+      <a href="edit-hub.html?tab=frametc" class="dl-tool-chip">Frame → TC</a>
+      <a href="edit-hub.html?tab=blur" class="dl-tool-chip">Image Degrader</a>
+      <a href="downloader.html" class="dl-tool-chip dl-tool-chip--active">Media Downloader</a>
+    </div>
+    <button id="dlNavRight" style="position:absolute;right:0;top:50%;transform:translateY(-50%);width:28px;height:28px;border-radius:50%;background:var(--bg-2);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:3;color:var(--text-2);opacity:1;pointer-events:all;transition:opacity .2s,background .15s;box-shadow:0 2px 8px rgba(0,0,0,0.2)" aria-label="Scroll right">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+    <div style="position:absolute;top:0;right:40px;bottom:0;width:48px;background:linear-gradient(to right,transparent,var(--bg));pointer-events:none"></div>
+  </div>
+</div>
+
+<div class="dl-card dl-animate d3">
+  <div class="dl-secure"><span class="dl-secure-dot"></span>Secure &amp; Encrypted</div>
+
+  <div class="dl-input-wrap">
+    <input class="dl-input" id="dlInput" type="url" placeholder="Paste link from YouTube, TikTok, Instagram, Twitter..." autocomplete="off" spellcheck="false" />
+    <button class="dl-paste-btn" id="dlPasteBtn">Paste</button>
+  </div>
+
+  <div class="dl-format-row">
+    <button class="dl-fmt-btn active" data-fmt="video" id="fmtVideo">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      MP4 Video
+    </button>
+    <button class="dl-fmt-btn" data-fmt="audio" id="fmtAudio">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+      MP3 Audio
+    </button>
+  </div>
+
+  <div class="dl-quality-row" id="dlQualityRow"></div>
+
+  <button class="dl-btn" id="dlBtn">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    Download
+  </button>
+
+  <div class="dl-loading" id="dlLoading">
+    <div class="dl-loading-label">
+      <span class="dl-spinner"></span>
+      <span id="dlLoadingText">Fetching media info...</span>
+    </div>
+    <div class="dl-progress-track"><div class="dl-progress-bar" id="dlProgressBar"></div></div>
+    <button class="dl-cancel-btn" id="dlCancelBtn">Cancel</button>
+  </div>
+
+  <div class="dl-results" id="dlResults">
+    <div class="dl-result-card">
+      <div class="dl-result-thumb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      </div>
+      <div class="dl-result-info">
+        <div class="dl-result-title" id="dlResultTitle">Media detected</div>
+        <div class="dl-result-meta">
+          <span class="dl-platform-badge" id="dlResultPlatform">Platform</span>
+          <span class="dl-duration">3:42</span>
+        </div>
+      </div>
+    </div>
+    <div class="dl-options-title">Choose quality</div>
+    <div class="dl-options-list" id="dlOptionsList"></div>
+  </div>
+
+  <div class="dl-platforms">
+    <span class="dl-platforms-label">Supported</span>
+    <div class="dl-platform-icons">
+      <span class="dl-platform-icon" title="YouTube">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="var(--bg-2)"/></svg>
+      </span>
+      <span class="dl-platform-icon" title="TikTok">
+        <svg width="16" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+      </span>
+      <span class="dl-platform-icon" title="Instagram">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      </span>
+      <span class="dl-platform-icon" title="Twitter / X">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+      </span>
+      <span class="dl-platform-icon" title="Facebook">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18 2h-3a5 5 0 00-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 011-1h3z"/></svg>
+      </span>
+    </div>
+  </div>
+</div>
+
+<div class="dl-recent dl-animate d4">
+  <div class="dl-recent-title">Recent Downloads</div>
+  <div class="dl-recent-list">
+    <div class="dl-recent-item">
+      <div class="dl-recent-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.96C18.88 4 12 4 12 4s-6.88 0-8.59.46a2.78 2.78 0 00-1.95 1.96A29 29 0 001 12a29 29 0 00.46 5.58A2.78 2.78 0 003.41 19.6C5.12 20 12 20 12 20s6.88 0 8.59-.46a2.78 2.78 0 001.95-1.95A29 29 0 0023 12a29 29 0 00-.46-5.58z"/></svg>
+      </div>
+      <div class="dl-recent-info">
+        <div class="dl-recent-name">tutorial_edit_cinematic.mp4</div>
+        <div class="dl-recent-meta">YouTube &middot; 45.2 MB</div>
+      </div>
+      <span class="dl-recent-badge">1080p</span>
+      <button class="dl-recent-dl" title="Download again">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+    <div class="dl-recent-item">
+      <div class="dl-recent-icon">
+        <svg width="13" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 01-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 01-2.88 2.5 2.89 2.89 0 01-2.89-2.89 2.89 2.89 0 012.89-2.89c.28 0 .54.04.79.1V9.01a6.33 6.33 0 00-.79-.05 6.34 6.34 0 00-6.34 6.34 6.34 6.34 0 006.34 6.34 6.34 6.34 0 006.33-6.34V8.69a8.18 8.18 0 004.78 1.52V6.76a4.85 4.85 0 01-1.01-.07z"/></svg>
+      </div>
+      <div class="dl-recent-info">
+        <div class="dl-recent-name">beat_sync_template.mp4</div>
+        <div class="dl-recent-meta">TikTok &middot; 12.8 MB</div>
+      </div>
+      <span class="dl-recent-badge">720p</span>
+      <button class="dl-recent-dl" title="Download again">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+    <div class="dl-recent-item">
+      <div class="dl-recent-icon">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+      </div>
+      <div class="dl-recent-info">
+        <div class="dl-recent-name">background_music.mp3</div>
+        <div class="dl-recent-meta">Instagram &middot; 8.4 MB</div>
+      </div>
+      <span class="dl-recent-badge">320kbps</span>
+      <button class="dl-recent-dl" title="Download again">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      </button>
+    </div>
+  </div>
+</div>
+
+<footer class="footer"><div class="footer-bottom"><span>&copy; 2025 Vamorax</span><span>Made for creators</span></div></footer>
+</div>
+<script>
+(function(){
+  var VIDEO_Q = ['1080p','720p','480p','360p'];
+  var AUDIO_Q = ['320kbps','192kbps','128kbps'];
+  var VIDEO_OPTIONS = [{q:'1080p',size:'~85 MB'},{q:'720p',size:'~45 MB'},{q:'480p',size:'~22 MB'},{q:'360p',size:'~12 MB'}];
+  var AUDIO_OPTIONS = [{q:'320kbps',size:'~12 MB'},{q:'192kbps',size:'~7 MB'},{q:'128kbps',size:'~5 MB'}];
+  var currentFmt = 'video';
+  var loadTimer = null;
+
+  function renderChips(arr){
+    var row = document.getElementById('dlQualityRow');
+    row.innerHTML = arr.map(function(q,i){
+      return '<button class="dl-chip'+(i===0?' active':'')+'" data-q="'+q+'">'+q+'</button>';
+    }).join('');
+    row.querySelectorAll('.dl-chip').forEach(function(btn){
+      btn.addEventListener('click',function(){
+        row.querySelectorAll('.dl-chip').forEach(function(b){b.classList.remove('active');});
+        btn.classList.add('active');
+      });
+    });
+  }
+
+  function renderOptions(arr){
+    var list = document.getElementById('dlOptionsList');
+    list.innerHTML = arr.map(function(o){
+      return '<div class="dl-option-row"><div class="dl-option-left"><span class="dl-option-quality">'+o.q+'</span><span class="dl-option-size">'+o.size+'</span></div><button class="dl-option-btn" onclick="simulateDownload(this)">Download</button></div>';
+    }).join('');
+  }
+
+  window.simulateDownload = function(btn){
+    var orig = btn.textContent;
+    btn.textContent = 'Downloading...';
+    btn.disabled = true;
+    setTimeout(function(){ btn.textContent = 'Done!'; setTimeout(function(){ btn.textContent = orig; btn.disabled = false; }, 1500); }, 1800);
+  };
+
+  renderChips(VIDEO_Q);
+
+  document.getElementById('fmtVideo').addEventListener('click',function(){
+    document.getElementById('fmtVideo').classList.add('active');
+    document.getElementById('fmtAudio').classList.remove('active');
+    currentFmt = 'video';
+    renderChips(VIDEO_Q);
+    renderOptions(VIDEO_OPTIONS);
+  });
+  document.getElementById('fmtAudio').addEventListener('click',function(){
+    document.getElementById('fmtAudio').classList.add('active');
+    document.getElementById('fmtVideo').classList.remove('active');
+    currentFmt = 'audio';
+    renderChips(AUDIO_Q);
+    renderOptions(AUDIO_OPTIONS);
+  });
+
+  document.getElementById('dlPasteBtn').addEventListener('click',function(){
+    if(navigator.clipboard && navigator.clipboard.readText){
+      navigator.clipboard.readText().then(function(t){
+        document.getElementById('dlInput').value = t;
+      }).catch(function(){
+        document.getElementById('dlInput').focus();
+      });
+    } else {
+      document.getElementById('dlInput').focus();
+    }
+  });
+
+  document.getElementById('dlBtn').addEventListener('click',function(){
+    var url = document.getElementById('dlInput').value.trim();
+    if(!url){ document.getElementById('dlInput').focus(); return; }
+    var loading = document.getElementById('dlLoading');
+    var results = document.getElementById('dlResults');
+    var bar = document.getElementById('dlProgressBar');
+    var txt = document.getElementById('dlLoadingText');
+    results.classList.remove('show');
+    loading.classList.add('show');
+    bar.style.width = '0';
+    var steps = [
+      {pct:'30%', msg:'Fetching media info...'},
+      {pct:'60%', msg:'Analyzing streams...'},
+      {pct:'88%', msg:'Preparing download options...'},
+      {pct:'100%', msg:'Ready!'}
+    ];
+    var i = 0;
+    function step(){
+      if(i >= steps.length){ finish(); return; }
+      bar.style.width = steps[i].pct;
+      txt.textContent = steps[i].msg;
+      i++;
+      loadTimer = setTimeout(step, 600);
+    }
+    function finish(){
+      loading.classList.remove('show');
+      var platform = url.includes('youtube') || url.includes('youtu.be') ? 'YouTube'
+        : url.includes('tiktok') ? 'TikTok'
+        : url.includes('instagram') ? 'Instagram'
+        : url.includes('twitter') || url.includes('x.com') ? 'Twitter / X'
+        : url.includes('facebook') ? 'Facebook' : 'Unknown';
+      document.getElementById('dlResultTitle').textContent = 'Media from ' + platform;
+      document.getElementById('dlResultPlatform').textContent = platform;
+      renderOptions(currentFmt === 'video' ? VIDEO_OPTIONS : AUDIO_OPTIONS);
+      results.classList.add('show');
+    }
+    step();
+  });
+
+  document.getElementById('dlCancelBtn').addEventListener('click',function(){
+    clearTimeout(loadTimer);
+    document.getElementById('dlLoading').classList.remove('show');
+    document.getElementById('dlProgressBar').style.width = '0';
+  });
+})();
+</script>
+<script type="module">
+  import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav } from './js/ui.js';
+  import { initCartSidebar } from './js/cart.js';
+  import { updateNavAuth } from './js/auth.js';
+  import { initNavPill } from './js/navbar.js';
+  import { initPageTransition } from './js/transition.js';
+  import { initWaveBackground } from './js/animations.js';
+  window.toggleTheme = toggleTheme;
+  initPageTransition();
+  startProgress(); initTheme(); initScrollReveal(); initSmoothScroll(); initMobileNav(); initCartSidebar(); updateNavAuth(); initNavPill(); initWaveBackground();
+  doneProgress();
+
+  // Arrow nav for tools chip bar
+  (function() {
+    const track = document.getElementById('dlNavTrack');
+    const btnL  = document.getElementById('dlNavLeft');
+    const btnR  = document.getElementById('dlNavRight');
+    if (!track || !btnL || !btnR) return;
+    const STEP = 160;
+    function updateArrows() {
+      const atStart = track.scrollLeft <= 4;
+      const atEnd   = track.scrollLeft + track.clientWidth >= track.scrollWidth - 4;
+      btnL.style.opacity = atStart ? '0' : '1';
+      btnL.style.pointerEvents = atStart ? 'none' : 'all';
+      btnR.style.opacity = atEnd ? '0' : '1';
+      btnR.style.pointerEvents = atEnd ? 'none' : 'all';
+    }
+    btnL.addEventListener('click', () => track.scrollBy({ left: -STEP, behavior: 'smooth' }));
+    btnR.addEventListener('click', () => track.scrollBy({ left: STEP, behavior: 'smooth' }));
+    track.addEventListener('scroll', updateArrows, { passive: true });
+    setTimeout(updateArrows, 100);
+    window.addEventListener('resize', updateArrows, { passive: true });
+  })();
+</script>
+</body>
+</html>
