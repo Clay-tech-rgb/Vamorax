@@ -1,5 +1,8 @@
 // api/download.js — Vercel Serverless Function (Node.js)
-// Proxy ke cobalt.tools API v10
+// Proxy ke All Media Downloader via RapidAPI
+
+const RAPIDAPI_KEY  = '2ff9169c12msh5bbb61f87b95b8cp10a495jsn57c534267f4a';
+const RAPIDAPI_HOST = 'all-media-downloader1.p.rapidapi.com';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -16,64 +19,72 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    // Cobalt v10 API — instance publik
-    const cobaltRes = await fetch('https://api.cobalt.tools/', {
+    const params = new URLSearchParams({
+      url: url.trim(),
+      cookies: '',
+      cookies_file: '',
+    });
+
+    const apiRes = await fetch(`https://${RAPIDAPI_HOST}/all`, {
       method: 'POST',
       headers: {
-        'Content-Type': 'application/json',
-        'Accept': 'application/json',
+        'Content-Type': 'application/x-www-form-urlencoded',
+        'x-rapidapi-host': RAPIDAPI_HOST,
+        'x-rapidapi-key': RAPIDAPI_KEY,
       },
-      body: JSON.stringify({
-        url: url.trim(),
-        videoQuality: 'max',
-        audioFormat: 'mp3',
-        audioBitrate: '320',
-        filenameStyle: 'basic',
-        downloadMode: isAudio ? 'audio' : 'auto',
-        twitterGif: false,
-        youtubeVideoCodec: 'h264',
-      }),
+      body: params.toString(),
       signal: AbortSignal.timeout(25000),
     });
 
-    const data = await cobaltRes.json();
+    const data = await apiRes.json();
 
-    // cobalt v10 status: "tunnel", "redirect", "picker", "error"
-    if (data.status === 'error') {
-      res.status(422).json({ error: data.error?.code || 'Cobalt gagal memproses URL ini' });
+    if (!apiRes.ok || data.error) {
+      res.status(422).json({ error: data.error || data.message || 'Gagal memproses URL' });
       return;
     }
 
+    // Normalkan response ke format frontend kita
     const formats = [];
 
-    if (data.status === 'tunnel' || data.status === 'redirect') {
+    // Cek berbagai format response yang mungkin dikembalikan API ini
+    const videos = data.videos || data.formats || data.links || [];
+    const thumb  = data.thumbnail || data.thumb || data.image || null;
+    const title  = data.title || data.filename || extractTitle(url.trim());
+
+    if (Array.isArray(videos) && videos.length > 0) {
+      videos.forEach((v, i) => {
+        const dlUrl = v.url || v.link || v.download_url;
+        if (!dlUrl) return;
+        const quality = v.quality || v.resolution || v.format || (isAudio ? 'Audio' : 'Video');
+        const ext     = v.ext || v.extension || v.format || (isAudio ? 'mp3' : 'mp4');
+        formats.push({
+          format_id: v.format_id || `f${i}`,
+          extension: ext,
+          resolution: quality,
+          filesize: v.filesize || v.size || null,
+          url: dlUrl,
+          note: v.note || quality,
+        });
+      });
+    } else if (data.url || data.download_url || data.link) {
+      // Single URL response
+      const dlUrl = data.url || data.download_url || data.link;
       formats.push({
         format_id: 'best',
         extension: isAudio ? 'mp3' : 'mp4',
         resolution: isAudio ? 'Audio' : 'Best',
         filesize: null,
-        url: data.url,
+        url: dlUrl,
         note: 'Best quality',
-      });
-    } else if (data.status === 'picker') {
-      (data.picker || []).forEach((item, i) => {
-        formats.push({
-          format_id: `pick_${i}`,
-          extension: item.type === 'photo' ? 'jpg' : (isAudio ? 'mp3' : 'mp4'),
-          resolution: item.type === 'photo' ? 'Photo' : (isAudio ? 'Audio' : 'Video'),
-          filesize: null,
-          url: item.url,
-          note: item.type || '',
-        });
       });
     }
 
-    res.status(200).json({
-      title: extractTitle(url.trim()),
-      thumbnail: null,
-      duration: null,
-      formats,
-    });
+    if (formats.length === 0) {
+      res.status(422).json({ error: 'Tidak ada format yang tersedia untuk URL ini' });
+      return;
+    }
+
+    res.status(200).json({ title, thumbnail: thumb, duration: data.duration || null, formats });
 
   } catch (err) {
     res.status(500).json({ error: err.message || 'Server error' });
