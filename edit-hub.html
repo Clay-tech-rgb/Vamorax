@@ -2644,6 +2644,10 @@ document.addEventListener('click', e => {
       fmtAudio.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--text);color:var(--bg);border:1.5px solid var(--text);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
       fmtVideo.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--bg-3);color:var(--text-3);border:1.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
     }
+    // Re-render format list kalau data sudah ada
+    if (window._dlVideoFormats || window._dlAudioFormats) {
+      renderDlFormats(fmt);
+    }
   }
   fmtVideo?.addEventListener('click', () => setFmt('video'));
   fmtAudio?.addEventListener('click', () => setFmt('audio'));
@@ -2684,10 +2688,9 @@ document.addEventListener('click', e => {
   }
 
   function doFetch(url) {
-    const isAudio = currentFmt === 'audio';
     clearResults();
     loading.style.display = 'block';
-    loadTxt.textContent = isAudio ? 'Fetching audio…' : 'Fetching video…';
+    loadTxt.textContent = 'Fetching media info…';
 
     let pct = 0;
     const fakeTimer = setInterval(() => {
@@ -2699,7 +2702,7 @@ document.addEventListener('click', e => {
     fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url, isAudio }),
+      body: JSON.stringify({ url }),
       signal: abortCtrl.signal
     })
     .then(r => r.json())
@@ -2729,36 +2732,66 @@ document.addEventListener('click', e => {
         thumbEl.appendChild(img);
       }
 
-      const formats = data.formats || [];
-      if (!formats.length) {
-        optList.innerHTML = '<p style="font-size:13px;color:var(--text-3)">Tidak ada format tersedia.</p>';
-      } else {
-        optList.innerHTML = formats.map(f => {
-          const ext = f.extension ? f.extension.toUpperCase() : (isAudio ? 'MP3' : 'MP4');
-          const label = isAudio ? 'Download MP3' : 'Download MP4';
-          return `
-            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md)" onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
-              <div style="display:flex;align-items:center;gap:8px">
-                <span style="font-size:13px;font-weight:700;color:var(--text)">${ext}</span>
-                <span style="font-size:11px;color:var(--text-3)">Best quality</span>
-              </div>
-              <a href="${f.url}" download target="_blank" rel="noopener"
-                style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);text-decoration:none;transition:opacity .2s"
-                onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">${label}</a>
-            </div>`;
-        }).join('');
-      }
+      // Simpan semua format
+      window._dlVideoFormats = data.videoFormats || [];
+      window._dlAudioFormats = data.audioFormats || [];
+      window._dlTitle = data.title || 'media';
 
+      renderDlFormats(currentFmt);
       results.style.display = 'block';
     })
     .catch(err => {
       clearInterval(fakeTimer);
-      if (err.name === 'AbortError') return;
       loading.style.display = 'none';
-      titleEl.textContent = 'Gagal menghubungi server. Coba lagi.';
-      results.style.display = 'block';
+      if (err.name !== 'AbortError') {
+        titleEl.textContent = 'Gagal menghubungi server.';
+        results.style.display = 'block';
+      }
     });
   }
+
+  function renderDlFormats(type) {
+    const formats = type === 'audio'
+      ? (window._dlAudioFormats || [])
+      : (window._dlVideoFormats || []);
+
+    if (!formats.length) {
+      optList.innerHTML = '<p style="font-size:13px;color:var(--text-3)">Tidak ada format tersedia.</p>';
+      return;
+    }
+
+    optList.innerHTML = formats.map((f, i) => {
+      const ext   = (f.extension || (type === 'audio' ? 'm4a' : 'mp4')).toUpperCase();
+      const label = 'Download ' + ext;
+      const qual  = f.resolution || f.note || ext;
+      const size  = f.filesize ? (f.filesize > 1048576 ? (f.filesize/1048576).toFixed(1)+' MB' : (f.filesize/1024).toFixed(0)+' KB') : '';
+      return `
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md)"
+          onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span style="font-size:13px;font-weight:700;color:var(--text)">${ext}</span>
+            <span style="font-size:11px;color:var(--text-3)">${qual}${size ? ' · '+size : ''}</span>
+          </div>
+          <button onclick="dlHubDownload('${type}',${i})"
+            style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);cursor:pointer;transition:opacity .2s"
+            onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">${label}</button>
+        </div>`;
+    }).join('');
+  }
+
+  window.dlHubDownload = function(type, idx) {
+    const formats = type === 'audio' ? window._dlAudioFormats : window._dlVideoFormats;
+    const f = formats && formats[idx];
+    if (!f) return;
+    const ext = f.extension || (type === 'audio' ? 'm4a' : 'mp4');
+    const title = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
+    const a = document.createElement('a');
+    a.href = f.url;
+    a.download = title + '.' + ext;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 
   // Auto-analyze saat URL diketik/paste (debounce 600ms)
   input?.addEventListener('input', () => {
