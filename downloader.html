@@ -466,22 +466,19 @@
     document.getElementById('dlBtn').disabled = false;
   });
 
-  // Trigger download — fetch URL lalu paksa download via Blob
+  // Trigger download — coba fetch+blob dulu, fallback window.open
   window.triggerDownload = function(idx) {
-    var f       = window._dlFormats && window._dlFormats[idx];
+    var f        = window._dlFormats && window._dlFormats[idx];
     if (!f) return;
-    var dlUrl   = f.url;
-    var ext     = f.extension || 'mp4';
-    var title   = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 60);
+    var dlUrl    = f.url;
+    var ext      = f.extension || 'mp4';
+    var title    = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 60);
     var filename = title + '.' + ext;
-    var btn     = document.getElementById('dlbtn-' + idx);
+    var btn      = document.getElementById('dlbtn-' + idx);
 
-    // Kalau URL adalah direct stream (bukan same-origin), buka di tab baru
-    // Browser modern akan download otomatis kalau server kasih Content-Disposition
-    // Untuk YouTube/TikTok direct URL, ini cara paling reliable
     if (btn) { btn.textContent = 'Downloading...'; btn.disabled = true; }
 
-    fetch(dlUrl, { method: 'GET' })
+    fetch(dlUrl)
       .then(function(r) {
         if (!r.ok) throw new Error('HTTP ' + r.status);
         return r.blob();
@@ -489,18 +486,24 @@
       .then(function(blob) {
         var blobUrl = URL.createObjectURL(blob);
         var a = document.createElement('a');
-        a.href = blobUrl;
+        a.href     = blobUrl;
         a.download = filename;
         document.body.appendChild(a);
         a.click();
         document.body.removeChild(a);
-        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
-        if (btn) { btn.textContent = 'Downloaded!'; btn.disabled = false; }
+        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 10000);
+        if (btn) { btn.textContent = '✓ Done'; btn.disabled = false; }
       })
-      .catch(function(err) {
-        // Fallback: buka di tab baru kalau fetch gagal (CORS block)
-        console.warn('Fetch failed, opening direct:', err.message);
-        window.open(dlUrl, '_blank');
+      .catch(function() {
+        // CORS block → buka di tab baru, browser auto-download
+        var a = document.createElement('a');
+        a.href     = dlUrl;
+        a.download = filename;
+        a.target   = '_blank';
+        a.rel      = 'noopener noreferrer';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
         if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
       });
   };

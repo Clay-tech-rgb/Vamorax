@@ -1,6 +1,8 @@
 // api/download.js — Vercel Serverless Function (Node.js)
+// Social Download All in One — RapidAPI
+
 const RAPIDAPI_KEY  = process.env.RAPIDAPI_KEY || '2ff9169c12msh5bbb61f87b95b8cp10a495jsn57c534267f4a';
-const RAPIDAPI_HOST = 'zm-api.p.rapidapi.com';
+const RAPIDAPI_HOST = 'social-download-all-in-one.p.rapidapi.com';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -14,14 +16,21 @@ module.exports = async function handler(req, res) {
 
   try {
     const apiRes = await fetch(
-      `https://${RAPIDAPI_HOST}/v1/social/autolink?url=${encodeURIComponent(url.trim())}`,
+      `https://${RAPIDAPI_HOST}/v1/social/autolink`,
       {
-        headers: { 'x-rapidapi-host': RAPIDAPI_HOST, 'x-rapidapi-key': RAPIDAPI_KEY },
+        method: 'POST',
+        headers: {
+          'Content-Type':    'application/json',
+          'x-rapidapi-host': RAPIDAPI_HOST,
+          'x-rapidapi-key':  RAPIDAPI_KEY,
+        },
+        body: JSON.stringify({ url: url.trim() }),
         signal: AbortSignal.timeout(25000),
       }
     );
 
     const data = await apiRes.json();
+
     if (!apiRes.ok || data.error === true) {
       res.status(422).json({ error: data.message || 'Gagal memproses URL' });
       return;
@@ -33,44 +42,46 @@ module.exports = async function handler(req, res) {
     const formats   = [];
 
     if (Array.isArray(mediaList) && mediaList.length > 0) {
+      // Cek apakah ada item audio di list
+      const hasAudioItem = mediaList.some(m => (m.type || '').toLowerCase() === 'audio');
+
       mediaList.forEach((item, i) => {
         const dlUrl    = item.url || item.link || item.download_url || item.src;
         if (!dlUrl) return;
 
-        const itemType = (item.type || '').toLowerCase();
-        const itemExt  = (item.ext  || '').toLowerCase();
-        const isItemAudio = itemType === 'audio';
+        const itemType    = (item.type     || '').toLowerCase();
+        const itemExt     = (item.ext      || item.extension || '').toLowerCase();
+        const itemQuality = (item.quality  || '').toLowerCase();
+
+        const isItemAudio = itemType === 'audio' || itemQuality === 'audio';
         const isItemVideo = itemType === 'video';
 
-        if (isItemVideo) {
-          if (item.audioQuality == null) return;   // video-only, skip
-          if (isAudio) return;                      // user minta audio, skip video
+        // Filter berdasarkan pilihan user
+        if (isAudio) {
+          // User minta audio — ambil hanya item audio
+          if (!isItemAudio) return;
+        } else {
+          // User minta video — skip audio, skip watermark
+          if (isItemAudio) return;
+          if (itemQuality === 'watermark') return;
         }
-        if (isItemAudio) {
-          if (!isAudio) return;                     // user minta video, skip audio
-          // prefer m4a, skip opus kalau ada m4a
-          if (itemExt === 'opus' && mediaList.some(m =>
-            (m.type||'').toLowerCase() === 'audio' && (m.ext||'').toLowerCase() === 'm4a'
-          )) return;
-        }
-        if (!isItemAudio && !isItemVideo) return;
 
-        const quality = item.label || item.quality || (isItemAudio ? 'Audio' : 'Video');
-        const ext     = itemExt || (isItemAudio ? 'm4a' : 'mp4');
+        const quality = item.quality || item.label || item.resolution || (isItemAudio ? 'Audio' : 'Video');
+        const ext     = itemExt || (isItemAudio ? 'mp3' : 'mp4');
 
         formats.push({
-          format_id:  item.formatId || `f${i}`,
+          format_id:  `f${i}`,
           extension:  ext,
           resolution: quality,
           filesize:   item.filesize || item.size || null,
-          url:        dlUrl,   // direct URL — frontend yang handle download via fetch+blob
+          url:        dlUrl,
           note:       quality,
         });
       });
     } else if (data.url || data.download_url || data.link) {
       formats.push({
         format_id:  'best',
-        extension:  isAudio ? 'm4a' : 'mp4',
+        extension:  isAudio ? 'mp3' : 'mp4',
         resolution: isAudio ? 'Audio' : 'Best',
         filesize:   null,
         url:        data.url || data.download_url || data.link,
@@ -79,11 +90,19 @@ module.exports = async function handler(req, res) {
     }
 
     if (formats.length === 0) {
-      res.status(422).json({ error: 'Tidak ada format tersedia.', debug: JSON.stringify(data).slice(0,300) });
+      res.status(422).json({
+        error: 'Tidak ada format tersedia.',
+        debug: JSON.stringify(data).slice(0, 300),
+      });
       return;
     }
 
-    res.status(200).json({ title, thumbnail: thumb, duration: data.duration || null, formats });
+    res.status(200).json({
+      title,
+      thumbnail: thumb,
+      duration:  data.duration || null,
+      formats,
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message || 'Server error' });
