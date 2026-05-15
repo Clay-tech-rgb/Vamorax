@@ -403,20 +403,20 @@
       if(formats.length === 0){
         list.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:12px 0">No formats available. Try a different URL.</p>';
       } else {
+        // Simpan formats di window supaya bisa diakses triggerDownload
+        window._dlFormats = formats;
+        window._dlTitle   = data.title || 'media';
         list.innerHTML = formats.map(function(f, i){
-          var label = isAudio ? 'Download ' + (f.extension || 'm4a').toUpperCase() : 'Download ' + (f.extension || 'mp4').toUpperCase();
+          var label   = 'Download ' + (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
           var quality = f.resolution || f.note || (isAudio ? 'Audio' : 'Video');
-          var ext = (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
-          var size = formatSize(f.filesize);
-          // Encode both proxy url and direct url
-          var proxyEnc  = encodeURIComponent(f.url);
-          var directEnc = encodeURIComponent(f.direct_url || f.url);
+          var ext     = (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
+          var size    = formatSize(f.filesize);
           return '<div class="dl-option-row">'
             + '<div class="dl-option-left">'
             + '<span class="dl-option-quality">' + ext + '</span>'
             + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
             + '</div>'
-            + '<button class="dl-option-btn" onclick="triggerDownload(\'' + proxyEnc + '\',\'' + directEnc + '\')">' + label + '</button>'
+            + '<button class="dl-option-btn" id="dlbtn-'+i+'" onclick="triggerDownload('+i+')">' + label + '</button>'
             + '</div>';
         }).join('');
       }
@@ -466,20 +466,43 @@
     document.getElementById('dlBtn').disabled = false;
   });
 
-  // Trigger download via proxy (bypass CORS), fallback ke direct URL
-  window.triggerDownload = function(proxyEnc, directEnc) {
-    var proxyUrl  = decodeURIComponent(proxyEnc);
-    var directUrl = directEnc ? decodeURIComponent(directEnc) : proxyUrl;
+  // Trigger download — fetch URL lalu paksa download via Blob
+  window.triggerDownload = function(idx) {
+    var f       = window._dlFormats && window._dlFormats[idx];
+    if (!f) return;
+    var dlUrl   = f.url;
+    var ext     = f.extension || 'mp4';
+    var title   = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 60);
+    var filename = title + '.' + ext;
+    var btn     = document.getElementById('dlbtn-' + idx);
 
-    // Coba proxy dulu (supaya nama file benar & force download)
-    // Kalau proxy gagal (misal file terlalu besar / timeout), fallback ke direct
-    var a = document.createElement('a');
-    a.href = proxyUrl;
-    a.target = '_blank';
-    a.rel = 'noopener noreferrer';
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+    // Kalau URL adalah direct stream (bukan same-origin), buka di tab baru
+    // Browser modern akan download otomatis kalau server kasih Content-Disposition
+    // Untuk YouTube/TikTok direct URL, ini cara paling reliable
+    if (btn) { btn.textContent = 'Downloading...'; btn.disabled = true; }
+
+    fetch(dlUrl, { method: 'GET' })
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.blob();
+      })
+      .then(function(blob) {
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = blobUrl;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 5000);
+        if (btn) { btn.textContent = 'Downloaded!'; btn.disabled = false; }
+      })
+      .catch(function(err) {
+        // Fallback: buka di tab baru kalau fetch gagal (CORS block)
+        console.warn('Fetch failed, opening direct:', err.message);
+        window.open(dlUrl, '_blank');
+        if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
+      });
   };
 })();
 </script>
