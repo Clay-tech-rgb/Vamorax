@@ -431,6 +431,9 @@
       window._dlAudioFormats = data.audioFormats || [];
       window._dlTitle        = data.title || 'media';
 
+      // Debug — hapus setelah confirmed working
+      console.log('videoFormats:', window._dlVideoFormats.length, 'audioFormats:', window._dlAudioFormats.length);
+
       // Render tab yang aktif saat ini
       var activeTab = document.getElementById('fmtAudio').classList.contains('active') ? 'audio' : 'video';
       renderFormats(activeTab);
