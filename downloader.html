@@ -305,19 +305,21 @@
     } else { document.getElementById('dlInput').focus(); }
   });
 
-  // Format toggle
+  // Enter key
+  document.getElementById('dlInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('dlBtn').click();
+  });
+
+  // Tab switch — video / audio
   document.getElementById('fmtVideo').addEventListener('click', function(){
     document.getElementById('fmtVideo').classList.add('active');
     document.getElementById('fmtAudio').classList.remove('active');
+    renderFormats('video');
   });
   document.getElementById('fmtAudio').addEventListener('click', function(){
     document.getElementById('fmtAudio').classList.add('active');
     document.getElementById('fmtVideo').classList.remove('active');
-  });
-
-  // Enter key trigger
-  document.getElementById('dlInput').addEventListener('keydown', function(e){
-    if(e.key === 'Enter') document.getElementById('dlBtn').click();
+    renderFormats('audio');
   });
 
   function getPlatformName(url) {
@@ -342,21 +344,50 @@
     return m + ':' + (s<10?'0':'') + s;
   }
 
-  function doDownload(url, isAudio) {
-    var loading  = document.getElementById('dlLoading');
-    var results  = document.getElementById('dlResults');
-    var bar      = document.getElementById('dlProgressBar');
-    var txt      = document.getElementById('dlLoadingText');
-    var dlBtn    = document.getElementById('dlBtn');
+  // Render format list sesuai tab aktif
+  function renderFormats(type) {
+    var list    = document.getElementById('dlOptionsList');
+    var formats = type === 'audio'
+      ? (window._dlAudioFormats || [])
+      : (window._dlVideoFormats || []);
 
-    // Reset UI
+    if(formats.length === 0){
+      list.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:12px 0">'
+        + (type === 'audio' ? 'No audio formats available.' : 'No video formats available.')
+        + '</p>';
+      return;
+    }
+
+    list.innerHTML = formats.map(function(f, i){
+      var ext     = (f.extension || (type === 'audio' ? 'm4a' : 'mp4')).toUpperCase();
+      var quality = f.resolution || f.note || ext;
+      var size    = formatSize(f.filesize);
+      var label   = 'Download ' + ext;
+      var key     = type + '_' + i;
+      return '<div class="dl-option-row">'
+        + '<div class="dl-option-left">'
+        + '<span class="dl-option-quality">' + ext + '</span>'
+        + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
+        + '</div>'
+        + '<button class="dl-option-btn" id="dlbtn-'+key+'" onclick="triggerDownload(\''+type+'\','+i+')">'
+        + label + '</button>'
+        + '</div>';
+    }).join('');
+  }
+
+  function doFetch(url) {
+    var loading = document.getElementById('dlLoading');
+    var results = document.getElementById('dlResults');
+    var bar     = document.getElementById('dlProgressBar');
+    var txt     = document.getElementById('dlLoadingText');
+    var dlBtn   = document.getElementById('dlBtn');
+
     results.classList.remove('show');
     loading.classList.add('show');
     bar.style.width = '0';
-    txt.textContent = isAudio ? 'Fetching audio...' : 'Fetching video...';
+    txt.textContent = 'Fetching media info...';
     dlBtn.disabled = true;
 
-    // Fake progress animation
     var fakePct = 0;
     var fakeTimer = setInterval(function(){
       if(fakePct < 80){ fakePct += Math.random() * 12; bar.style.width = Math.min(fakePct, 80) + '%'; }
@@ -367,7 +398,7 @@
     fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url, isAudio: isAudio }),
+      body: JSON.stringify({ url: url }),
       signal: abortCtrl.signal
     })
     .then(function(res){ return res.json(); })
@@ -378,7 +409,7 @@
       dlBtn.disabled = false;
 
       if(data.error){
-        alert('Error: ' + data.error);
+        alert('Error: ' + data.error + (data.debug ? '\n\n' + data.debug : ''));
         return;
       }
 
@@ -387,55 +418,24 @@
       // Thumbnail
       var thumb = document.getElementById('dlResultThumb');
       if(data.thumbnail){
-        thumb.innerHTML = '<img src="'+data.thumbnail+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.innerHTML=\'<svg width=20 height=20 viewBox=\\\"0 0 24 24\\\" fill=none stroke=currentColor stroke-width=1.5><polygon points=\\\"23 7 16 12 23 17 23 7\\\"/><rect x=1 y=5 width=15 height=14 rx=2/></svg>\'" />';
+        thumb.innerHTML = '<img src="'+data.thumbnail+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.style.display=\'none\'" />';
       }
 
       document.getElementById('dlResultTitle').textContent = data.title || ('Media from ' + platform);
       document.getElementById('dlResultPlatform').textContent = platform;
-
       var durEl = document.getElementById('dlResultDuration');
       durEl.textContent = data.duration ? formatDuration(data.duration) : '';
 
-      // Render format options
-      var list = document.getElementById('dlOptionsList');
-      var formats = data.formats || [];
+      // Simpan semua format
+      window._dlVideoFormats = data.videoFormats || [];
+      window._dlAudioFormats = data.audioFormats || [];
+      window._dlTitle        = data.title || 'media';
 
-      if(formats.length === 0){
-        list.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:12px 0">No formats available. Try a different URL.</p>';
-      } else {
-        // Simpan formats di window supaya bisa diakses triggerDownload
-        window._dlFormats = formats;
-        window._dlTitle   = data.title || 'media';
-        list.innerHTML = formats.map(function(f, i){
-          var label   = 'Download ' + (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
-          var quality = f.resolution || f.note || (isAudio ? 'Audio' : 'Video');
-          var ext     = (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
-          var size    = formatSize(f.filesize);
-          return '<div class="dl-option-row">'
-            + '<div class="dl-option-left">'
-            + '<span class="dl-option-quality">' + ext + '</span>'
-            + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
-            + '</div>'
-            + '<button class="dl-option-btn" id="dlbtn-'+i+'" onclick="triggerDownload('+i+')">' + label + '</button>'
-            + '</div>';
-        }).join('');
-      }
+      // Render tab yang aktif saat ini
+      var activeTab = document.getElementById('fmtAudio').classList.contains('active') ? 'audio' : 'video';
+      renderFormats(activeTab);
 
       results.classList.add('show');
-
-      // Save to recent (localStorage)
-      try {
-        var recent = JSON.parse(localStorage.getItem('dlRecent') || '[]');
-        recent.unshift({
-          title: data.title || ('Media from ' + platform),
-          platform: platform,
-          quality: formats[0] ? (formats[0].resolution || 'Best') : 'Best',
-          url: url,
-          ts: Date.now()
-        });
-        recent = recent.slice(0, 10);
-        localStorage.setItem('dlRecent', JSON.stringify(recent));
-      } catch(e){}
     })
     .catch(function(err){
       clearInterval(fakeTimer);
@@ -448,15 +448,8 @@
   document.getElementById('dlBtn').addEventListener('click', function(){
     var url = document.getElementById('dlInput').value.trim();
     if(!url){ document.getElementById('dlInput').focus(); return; }
-
-    // Basic URL validation
-    try { new URL(url); } catch(e) {
-      alert('Please enter a valid URL.');
-      return;
-    }
-
-    var isAudio = document.getElementById('fmtAudio').classList.contains('active');
-    doDownload(url, isAudio);
+    try { new URL(url); } catch(e){ alert('Please enter a valid URL.'); return; }
+    doFetch(url);
   });
 
   document.getElementById('dlCancelBtn').addEventListener('click', function(){
@@ -466,31 +459,35 @@
     document.getElementById('dlBtn').disabled = false;
   });
 
-  // Trigger download — semua URL sudah lewat proxy server, langsung download
-  window.triggerDownload = function(idx) {
-    var f        = window._dlFormats && window._dlFormats[idx];
-    if (!f) return;
-    var dlUrl    = f.url;   // sudah berupa /api/download?proxy=...
-    var ext      = f.extension || 'mp4';
+  // Trigger download via proxy
+  window.triggerDownload = function(type, idx) {
+    var formats = type === 'audio' ? window._dlAudioFormats : window._dlVideoFormats;
+    var f       = formats && formats[idx];
+    if(!f) return;
+
+    var ext      = f.extension || (type === 'audio' ? 'm4a' : 'mp4');
     var title    = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
     var filename = title + '.' + ext;
-    var btn      = document.getElementById('dlbtn-' + idx);
+    var key      = type + '_' + idx;
+    var btn      = document.getElementById('dlbtn-' + key);
 
-    if (btn) { btn.textContent = 'Downloading...'; btn.disabled = true; }
+    if(btn){ btn.textContent = 'Downloading...'; btn.disabled = true; }
 
-    // Buat link download dan klik — server akan kirim file dengan Content-Disposition: attachment
     var a = document.createElement('a');
-    a.href     = dlUrl;
+    a.href     = f.url;
     a.download = filename;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
 
     setTimeout(function(){
-      if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
+      if(btn){ btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
     }, 3000);
   };
 })();
+</script>
+
+
 </script>
 <script type="module">
   import { initTheme, toggleTheme, startProgress, doneProgress, initScrollReveal, initSmoothScroll, initMobileNav } from './js/ui.js';
