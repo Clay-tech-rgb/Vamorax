@@ -475,16 +475,22 @@
 
     if(btn){ btn.textContent = 'Downloading...'; btn.disabled = true; }
 
-    var a = document.createElement('a');
-    a.href     = f.url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-
-    setTimeout(function(){
-      if(btn){ btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
-    }, 3000);
+    if(f.direct) {
+      // YouTube direct URL — buka di tab baru, klik kanan → Save As
+      window.open(f.url, '_blank');
+      if(btn){ setTimeout(function(){ btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }, 1000); }
+    } else {
+      // Proxy URL — langsung download
+      var a = document.createElement('a');
+      a.href = f.url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(function(){
+        if(btn){ btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
+      }, 3000);
+    }
   };
 })();
 </script>

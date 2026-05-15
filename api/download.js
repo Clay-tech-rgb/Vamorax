@@ -35,8 +35,7 @@ module.exports = async function handler(req, res) {
       res.setHeader('Content-Disposition', `attachment; filename="${encodeURIComponent(filename)}"`);
       res.setHeader('Content-Length', buf.length);
       res.setHeader('Cache-Control', 'no-store');
-      res.status(200).end(buf);
-    } catch (err) {
+      res.status(200).end(buf);    } catch (err) {
       if (!res.headersSent) res.status(500).json({ error: err.message });
     }
     return;
@@ -97,14 +96,20 @@ module.exports = async function handler(req, res) {
         const ext       = itemExt || (isItemAudio ? 'm4a' : 'mp4');
         const safeTitle = (title || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
         const filename  = `${safeTitle}.${ext}`;
-        const proxyUrl  = `/api/download?proxy=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
+
+        // YouTube (googlevideo.com) IP-locked — tidak bisa di-proxy dari Vercel, kirim direct
+        const isGooglevideo = dlUrl.includes('googlevideo.com');
+        const finalUrl = isGooglevideo
+          ? dlUrl
+          : `/api/download?proxy=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`;
 
         const formatObj = {
           format_id:  `f${i}`,
           extension:  ext,
           resolution: quality,
           filesize:   item.filesize || item.size || null,
-          url:        proxyUrl,
+          url:        finalUrl,
+          direct:     isGooglevideo,
           note:       quality,
         };
 

@@ -2785,12 +2785,19 @@ document.addEventListener('click', e => {
     if (!f) return;
     const ext = f.extension || (type === 'audio' ? 'm4a' : 'mp4');
     const title = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
-    const a = document.createElement('a');
-    a.href = f.url;
-    a.download = title + '.' + ext;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
+
+    if (f.direct) {
+      // YouTube — buka di tab baru
+      window.open(f.url, '_blank');
+    } else {
+      // Proxy — langsung download
+      const a = document.createElement('a');
+      a.href = f.url;
+      a.download = title + '.' + ext;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
   };
 
   // Auto-analyze saat URL diketik/paste (debounce 600ms)
