@@ -466,11 +466,11 @@
     document.getElementById('dlBtn').disabled = false;
   });
 
-  // Trigger download
+  // Trigger download — semua URL sudah lewat proxy server, langsung download
   window.triggerDownload = function(idx) {
     var f        = window._dlFormats && window._dlFormats[idx];
     if (!f) return;
-    var dlUrl    = f.url;
+    var dlUrl    = f.url;   // sudah berupa /api/download?proxy=...
     var ext      = f.extension || 'mp4';
     var title    = (window._dlTitle || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
     var filename = title + '.' + ext;
@@ -478,25 +478,17 @@
 
     if (btn) { btn.textContent = 'Downloading...'; btn.disabled = true; }
 
-    // Fetch + blob: paksa download dengan nama file yang benar
-    fetch(dlUrl)
-      .then(function(r) {
-        if (!r.ok) throw new Error('HTTP ' + r.status);
-        return r.blob();
-      })
-      .then(function(blob) {
-        var blobUrl = URL.createObjectURL(blob);
-        var a = document.createElement('a');
-        a.href = blobUrl; a.download = filename;
-        document.body.appendChild(a); a.click(); document.body.removeChild(a);
-        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 15000);
-        if (btn) { btn.textContent = '✓ Done'; btn.disabled = false; }
-      })
-      .catch(function() {
-        // CORS block — buka di tab baru (user bisa klik kanan → Save As)
-        window.open(dlUrl, '_blank');
-        if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
-      });
+    // Buat link download dan klik — server akan kirim file dengan Content-Disposition: attachment
+    var a = document.createElement('a');
+    a.href     = dlUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+
+    setTimeout(function(){
+      if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
+    }, 3000);
   };
 })();
 </script>
