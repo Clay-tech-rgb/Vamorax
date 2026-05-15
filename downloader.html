@@ -478,41 +478,25 @@
 
     if (btn) { btn.textContent = 'Downloading...'; btn.disabled = true; }
 
-    if (f.needs_proxy) {
-      // URL sudah di-wrap ke /api/download?proxy=... — buka langsung, server kirim file
-      var a = document.createElement('a');
-      a.href     = dlUrl;
-      a.download = filename;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      if (btn) { setTimeout(function(){ btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }, 2000); }
-    } else {
-      // URL publik — fetch + blob supaya nama file benar
-      fetch(dlUrl)
-        .then(function(r) {
-          if (!r.ok) throw new Error('HTTP ' + r.status);
-          return r.blob();
-        })
-        .then(function(blob) {
-          var blobUrl = URL.createObjectURL(blob);
-          var a = document.createElement('a');
-          a.href     = blobUrl;
-          a.download = filename;
-          document.body.appendChild(a);
-          a.click();
-          document.body.removeChild(a);
-          setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 10000);
-          if (btn) { btn.textContent = '✓ Done'; btn.disabled = false; }
-        })
-        .catch(function() {
-          // CORS block fallback
-          var a = document.createElement('a');
-          a.href = dlUrl; a.target = '_blank'; a.rel = 'noopener noreferrer';
-          document.body.appendChild(a); a.click(); document.body.removeChild(a);
-          if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
-        });
-    }
+    // Fetch + blob: paksa download dengan nama file yang benar
+    fetch(dlUrl)
+      .then(function(r) {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.blob();
+      })
+      .then(function(blob) {
+        var blobUrl = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = blobUrl; a.download = filename;
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function(){ URL.revokeObjectURL(blobUrl); }, 15000);
+        if (btn) { btn.textContent = '✓ Done'; btn.disabled = false; }
+      })
+      .catch(function() {
+        // CORS block — buka di tab baru (user bisa klik kanan → Save As)
+        window.open(dlUrl, '_blank');
+        if (btn) { btn.textContent = 'Download ' + ext.toUpperCase(); btn.disabled = false; }
+      });
   };
 })();
 </script>

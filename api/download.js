@@ -2,13 +2,6 @@
 const RAPIDAPI_KEY  = process.env.RAPIDAPI_KEY || '2ff9169c12msh5bbb61f87b95b8cp10a495jsn57c534267f4a';
 const RAPIDAPI_HOST = 'social-download-all-in-one.p.rapidapi.com';
 
-const NEEDS_PROXY_DOMAINS = ['googlevideo.com', 'googleusercontent.com'];
-
-function needsProxy(url) {
-  try { return NEEDS_PROXY_DOMAINS.some(d => new URL(url).hostname.includes(d)); }
-  catch { return false; }
-}
-
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -40,12 +33,12 @@ module.exports = async function handler(req, res) {
       return;
     }
 
+    const source    = (data.source || '').toLowerCase();
+    const isYouTube = source === 'youtube';
     const thumb     = data.thumbnail || data.thumb || data.cover || data.image || null;
     const title     = data.title || data.filename || data.desc || extractTitle(url.trim());
     const mediaList = data.medias || data.links || data.videos || data.data || [];
     const formats   = [];
-
-    const isYouTube = (data.source || '').toLowerCase() === 'youtube';
 
     if (Array.isArray(mediaList) && mediaList.length > 0) {
       mediaList.forEach((item, i) => {
@@ -62,58 +55,43 @@ module.exports = async function handler(req, res) {
 
         if (isAudio) {
           if (isYouTube) {
-            // YouTube: ambil type=audio saja, prefer m4a skip opus
+            // YouTube: ambil type=audio, prefer m4a skip opus
             if (!isItemAudio) return;
             if (itemExt === 'opus' && mediaList.some(m =>
               (m.type||'').toLowerCase() === 'audio' && (m.ext||'').toLowerCase() === 'm4a'
             )) return;
           } else {
-            // Non-YouTube (TikTok, IG, dll): ambil type=audio atau quality=audio
-            const isAudioItem = isItemAudio || itemQuality === 'audio';
-            if (!isAudioItem) return;
+            // TikTok/IG/dll: ambil type=audio atau quality=audio
+            if (!isItemAudio && itemQuality !== 'audio') return;
           }
         } else {
           // User minta video
           if (isItemAudio) return;
           if (itemQuality === 'watermark') return;
-          // YouTube: skip video-only streams (no audioQuality)
+          // YouTube: skip video-only (tidak ada audioQuality)
           if (isYouTube && isItemVideo && (audioQ === '' || audioQ == null)) return;
         }
 
-        const quality   = item.quality || item.label || (isItemAudio ? 'Audio' : 'Video');
-        const ext       = itemExt || (isItemAudio ? 'm4a' : 'mp4');
-        const safeTitle = (title || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
-        const filename  = `${safeTitle}.${ext}`;
-        const proxy     = needsProxy(dlUrl);
+        const quality = item.quality || item.label || (isItemAudio ? 'Audio' : 'Video');
+        const ext     = itemExt || (isItemAudio ? 'm4a' : 'mp4');
 
         formats.push({
-          format_id:   `f${i}`,
-          extension:   ext,
-          resolution:  quality,
-          filesize:    item.filesize || item.size || null,
-          url:         proxy
-            ? `/api/proxy?proxy=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`
-            : dlUrl,
-          needs_proxy: proxy,
-          note:        quality,
+          format_id:  `f${i}`,
+          extension:  ext,
+          resolution: quality,
+          filesize:   item.filesize || item.size || null,
+          url:        dlUrl,   // direct URL selalu — tidak ada proxy
+          note:       quality,
         });
       });
     } else if (data.url || data.download_url || data.link) {
-      const dlUrl     = data.url || data.download_url || data.link;
-      const ext       = isAudio ? 'm4a' : 'mp4';
-      const safeTitle = (title || 'media').replace(/[^a-z0-9_\-]/gi, '_').slice(0, 50);
-      const filename  = `${safeTitle}.${ext}`;
-      const proxy     = needsProxy(dlUrl);
       formats.push({
-        format_id:   'best',
-        extension:   ext,
-        resolution:  isAudio ? 'Audio' : 'Best',
-        filesize:    null,
-        url:         proxy
-          ? `/api/proxy?proxy=${encodeURIComponent(dlUrl)}&filename=${encodeURIComponent(filename)}`
-          : dlUrl,
-        needs_proxy: proxy,
-        note:        'Best quality',
+        format_id:  'best',
+        extension:  isAudio ? 'm4a' : 'mp4',
+        resolution: isAudio ? 'Audio' : 'Best',
+        filesize:   null,
+        url:        data.url || data.download_url || data.link,
+        note:       'Best quality',
       });
     }
 
@@ -125,7 +103,13 @@ module.exports = async function handler(req, res) {
       return;
     }
 
-    res.status(200).json({ title, thumbnail: thumb, duration: data.duration || null, formats });
+    res.status(200).json({
+      title,
+      thumbnail: thumb,
+      duration:  data.duration || null,
+      source,
+      formats,
+    });
 
   } catch (err) {
     res.status(500).json({ error: err.message || 'Server error' });
