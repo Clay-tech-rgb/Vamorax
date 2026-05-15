@@ -2633,7 +2633,6 @@ document.addEventListener('click', e => {
   let currentFmt   = 'video';
   let analyzeTimer = null;
   let abortCtrl    = null;
-  let lastData     = null;
 
   // ── Format toggle ──
   function setFmt(fmt) {
@@ -2645,7 +2644,6 @@ document.addEventListener('click', e => {
       fmtAudio.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--text);color:var(--bg);border:1.5px solid var(--text);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
       fmtVideo.style.cssText = 'flex:1;padding:8px 16px;font-size:13px;font-weight:600;background:var(--bg-3);color:var(--text-3);border:1.5px solid var(--border);border-radius:var(--radius-md);cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:all .15s';
     }
-    if (lastData) renderOptions(lastData);
   }
   fmtVideo?.addEventListener('click', () => setFmt('video'));
   fmtAudio?.addEventListener('click', () => setFmt('audio'));
@@ -2683,49 +2681,25 @@ document.addEventListener('click', e => {
     titleEl.textContent = '—';
     platformEl.textContent = '—';
     optList.innerHTML = '';
-    lastData = null;
   }
 
-  function renderOptions(data) {
-    const filtered = (data.formats || []).filter(f =>
-      currentFmt === 'audio' ? f.resolution === 'Audio' : f.resolution !== 'Audio'
-    );
-    const list = filtered.length ? filtered : (data.formats || []);
-    optList.innerHTML = list.map(f => {
-      const size  = f.filesize ? (f.filesize / 1048576).toFixed(1) + ' MB' : '';
-      const label = f.resolution + (f.extension ? ' · ' + f.extension.toUpperCase() : '');
-      return `
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md);transition:border-color var(--transition)" onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
-          <div style="display:flex;align-items:center;gap:8px">
-            <span style="font-size:13px;font-weight:700;color:var(--text)">${label}</span>
-            ${size ? `<span style="font-size:11px;color:var(--text-3)">${size}</span>` : ''}
-          </div>
-          <a href="${f.url}" download target="_blank" rel="noopener"
-            style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);cursor:pointer;text-decoration:none;transition:opacity .2s"
-            onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">Download</a>
-        </div>`;
-    }).join('');
-  }
-
-  function analyze(url) {
-    if (!url || !isValidUrl(url)) { clearResults(); return; }
-    if (!detectPlatform(url)) { clearResults(); return; }
-
+  function doFetch(url) {
+    const isAudio = currentFmt === 'audio';
     clearResults();
     loading.style.display = 'block';
-    loadTxt.textContent = 'Menganalisis link…';
+    loadTxt.textContent = isAudio ? 'Fetching audio…' : 'Fetching video…';
 
     let pct = 0;
     const fakeTimer = setInterval(() => {
       if (pct < 85) { pct += Math.random() * 10; progressBar.style.width = Math.min(pct, 85) + '%'; }
-    }, 400);
+    }, 350);
 
     abortCtrl = new AbortController();
 
     fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, isAudio }),
       signal: abortCtrl.signal
     })
     .then(r => r.json())
@@ -2741,7 +2715,6 @@ document.addEventListener('click', e => {
         return;
       }
 
-      lastData = data;
       const platform = detectPlatform(url) || 'Unknown';
       platformEl.textContent = platform;
       titleEl.textContent = data.title || ('Media from ' + platform);
@@ -2756,7 +2729,26 @@ document.addEventListener('click', e => {
         thumbEl.appendChild(img);
       }
 
-      renderOptions(data);
+      const formats = data.formats || [];
+      if (!formats.length) {
+        optList.innerHTML = '<p style="font-size:13px;color:var(--text-3)">Tidak ada format tersedia.</p>';
+      } else {
+        optList.innerHTML = formats.map(f => {
+          const ext = f.extension ? f.extension.toUpperCase() : (isAudio ? 'MP3' : 'MP4');
+          const label = isAudio ? 'Download MP3' : 'Download MP4';
+          return `
+            <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md)" onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
+              <div style="display:flex;align-items:center;gap:8px">
+                <span style="font-size:13px;font-weight:700;color:var(--text)">${ext}</span>
+                <span style="font-size:11px;color:var(--text-3)">Best quality</span>
+              </div>
+              <a href="${f.url}" download target="_blank" rel="noopener"
+                style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);text-decoration:none;transition:opacity .2s"
+                onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">${label}</a>
+            </div>`;
+        }).join('');
+      }
+
       results.style.display = 'block';
     })
     .catch(err => {
@@ -2768,11 +2760,13 @@ document.addEventListener('click', e => {
     });
   }
 
+  // Auto-analyze saat URL diketik/paste (debounce 600ms)
   input?.addEventListener('input', () => {
     const url = input.value.trim();
     clearTimeout(analyzeTimer);
     if (!url) { clearResults(); return; }
-    analyzeTimer = setTimeout(() => analyze(url), 600);
+    if (!isValidUrl(url) || !detectPlatform(url)) return;
+    analyzeTimer = setTimeout(() => doFetch(url), 600);
   });
 
   input?.addEventListener('keydown', e => {
