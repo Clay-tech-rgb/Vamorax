@@ -1,5 +1,5 @@
 // api/download.js — Vercel Serverless Function (Node.js)
-// Proxy ke cobalt.tools API — tidak butuh yt-dlp binary
+// Proxy ke cobalt.tools API v10
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -9,15 +9,15 @@ module.exports = async function handler(req, res) {
   if (req.method === 'OPTIONS') { res.status(200).end(); return; }
   if (req.method !== 'POST') { res.status(405).json({ error: 'Method not allowed' }); return; }
 
-  const { url } = req.body || {};
+  const { url, isAudio } = req.body || {};
   if (!url || !url.trim()) {
     res.status(400).json({ error: 'URL tidak boleh kosong' });
     return;
   }
 
   try {
-    // Cobalt.tools API — gratis, no key needed
-    const cobaltRes = await fetch('https://api.cobalt.tools/api/json', {
+    // Cobalt v10 API — instance publik
+    const cobaltRes = await fetch('https://api.cobalt.tools/', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -25,55 +25,51 @@ module.exports = async function handler(req, res) {
       },
       body: JSON.stringify({
         url: url.trim(),
-        vQuality: 'max',       // ambil kualitas tertinggi
-        filenamePattern: 'basic',
-        isAudioOnly: false,
-        disableMetadata: false,
+        videoQuality: 'max',
+        audioFormat: 'mp3',
+        audioBitrate: '320',
+        filenameStyle: 'basic',
+        downloadMode: isAudio ? 'audio' : 'auto',
+        twitterGif: false,
+        youtubeVideoCodec: 'h264',
       }),
-      signal: AbortSignal.timeout(20000),
+      signal: AbortSignal.timeout(25000),
     });
 
     const data = await cobaltRes.json();
 
-    // cobalt status: "stream", "redirect", "picker", "error", "rate-limit"
-    if (data.status === 'error' || data.status === 'rate-limit') {
-      res.status(422).json({ error: data.text || 'Cobalt gagal memproses URL ini' });
+    // cobalt v10 status: "tunnel", "redirect", "picker", "error"
+    if (data.status === 'error') {
+      res.status(422).json({ error: data.error?.code || 'Cobalt gagal memproses URL ini' });
       return;
     }
 
-    // Normalkan response ke format yang sama dengan frontend kita
     const formats = [];
 
-    if (data.status === 'stream' || data.status === 'redirect') {
-      // Single direct URL
+    if (data.status === 'tunnel' || data.status === 'redirect') {
       formats.push({
         format_id: 'best',
-        extension: 'mp4',
-        resolution: 'Best',
+        extension: isAudio ? 'mp3' : 'mp4',
+        resolution: isAudio ? 'Audio' : 'Best',
         filesize: null,
         url: data.url,
         note: 'Best quality',
-        vcodec: 'avc1',
-        acodec: 'mp4a',
       });
     } else if (data.status === 'picker') {
-      // Multiple options (misal Instagram carousel)
       (data.picker || []).forEach((item, i) => {
         formats.push({
           format_id: `pick_${i}`,
-          extension: item.type === 'photo' ? 'jpg' : 'mp4',
-          resolution: item.type === 'photo' ? 'Photo' : 'Video',
+          extension: item.type === 'photo' ? 'jpg' : (isAudio ? 'mp3' : 'mp4'),
+          resolution: item.type === 'photo' ? 'Photo' : (isAudio ? 'Audio' : 'Video'),
           filesize: null,
           url: item.url,
           note: item.type || '',
-          vcodec: item.type === 'photo' ? 'none' : 'avc1',
-          acodec: item.type === 'photo' ? 'none' : 'mp4a',
         });
       });
     }
 
     res.status(200).json({
-      title: data.filename || extractTitle(url.trim()),
+      title: extractTitle(url.trim()),
       thumbnail: null,
       duration: null,
       formats,
