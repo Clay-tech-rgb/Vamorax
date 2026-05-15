@@ -359,18 +359,20 @@
     }
 
     list.innerHTML = formats.map(function(f, i){
-      var ext     = (f.extension || (type === 'audio' ? 'm4a' : 'mp4')).toUpperCase();
+      var ext     = (f.extension || (type === 'audio' ? 'mp3' : 'mp4')).toUpperCase();
       var quality = f.resolution || f.note || ext;
-      var size    = formatSize(f.filesize);
-      var label   = 'Download ' + ext;
       var key     = type + '_' + i;
+      var hasUrl  = f.url && f.url !== 'null';
+      var btnStyle = hasUrl
+        ? 'class="dl-option-btn" onclick="triggerDownload(\''+type+'\','+i+')"'
+        : 'class="dl-option-btn" disabled title="Download coming soon" style="opacity:.4;cursor:not-allowed"';
+      var label = hasUrl ? ('Download ' + ext) : ('Download ' + ext);
       return '<div class="dl-option-row">'
         + '<div class="dl-option-left">'
         + '<span class="dl-option-quality">' + ext + '</span>'
-        + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
+        + '<span class="dl-option-size">' + quality + '</span>'
         + '</div>'
-        + '<button class="dl-option-btn" id="dlbtn-'+key+'" onclick="triggerDownload(\''+type+'\','+i+')">'
-        + label + '</button>'
+        + '<button ' + btnStyle + '>' + label + '</button>'
         + '</div>';
     }).join('');
   }

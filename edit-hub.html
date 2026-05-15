@@ -2761,20 +2761,22 @@ document.addEventListener('click', e => {
     }
 
     optList.innerHTML = formats.map((f, i) => {
-      const ext   = (f.extension || (type === 'audio' ? 'm4a' : 'mp4')).toUpperCase();
-      const label = 'Download ' + ext;
-      const qual  = f.resolution || f.note || ext;
-      const size  = f.filesize ? (f.filesize > 1048576 ? (f.filesize/1048576).toFixed(1)+' MB' : (f.filesize/1024).toFixed(0)+' KB') : '';
+      const ext     = (f.extension || (type === 'audio' ? 'mp3' : 'mp4')).toUpperCase();
+      const quality = f.resolution || f.note || ext;
+      const hasUrl  = f.url && f.url !== 'null';
+      const btnAttr = hasUrl
+        ? `onclick="dlHubDownload('${type}',${i})"`
+        : `disabled title="Download coming soon" style="opacity:.4;cursor:not-allowed"`;
       return `
         <div style="display:flex;align-items:center;justify-content:space-between;padding:9px 12px;background:var(--bg-2);border:1px solid var(--border);border-radius:var(--radius-md)"
           onmouseenter="this.style.borderColor='var(--border-strong)'" onmouseleave="this.style.borderColor='var(--border)'">
           <div style="display:flex;align-items:center;gap:8px">
             <span style="font-size:13px;font-weight:700;color:var(--text)">${ext}</span>
-            <span style="font-size:11px;color:var(--text-3)">${qual}${size ? ' · '+size : ''}</span>
+            <span style="font-size:11px;color:var(--text-3)">${quality}</span>
           </div>
-          <button onclick="dlHubDownload('${type}',${i})"
+          <button ${btnAttr}
             style="padding:5px 12px;font-size:12px;font-weight:600;background:var(--text);color:var(--bg);border:1px solid var(--text);border-radius:var(--radius);cursor:pointer;transition:opacity .2s"
-            onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">${label}</button>
+            onmouseenter="this.style.opacity='.8'" onmouseleave="this.style.opacity='1'">Download ${ext}</button>
         </div>`;
     }).join('');
   }
