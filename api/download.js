@@ -45,6 +45,8 @@ module.exports = async function handler(req, res) {
     const mediaList = data.medias || data.links || data.videos || data.data || [];
     const formats   = [];
 
+    const isYouTube = (data.source || '').toLowerCase() === 'youtube';
+
     if (Array.isArray(mediaList) && mediaList.length > 0) {
       mediaList.forEach((item, i) => {
         const dlUrl    = item.url || item.link || item.download_url || item.src;
@@ -55,20 +57,27 @@ module.exports = async function handler(req, res) {
         const itemQuality = (item.quality || '').toLowerCase();
         const audioQ      = item.audioQuality || '';
 
-        const isItemAudio         = itemType === 'audio';
-        const isItemVideoMerged   = itemType === 'video' && audioQ !== '' && audioQ != null;
-        const isItemVideoOnly     = itemType === 'video' && (audioQ === '' || audioQ == null);
+        const isItemAudio = itemType === 'audio';
+        const isItemVideo = itemType === 'video';
 
         if (isAudio) {
-          if (!isItemAudio) return;
-          // Prefer m4a, skip opus kalau ada m4a
-          if (itemExt === 'opus' && mediaList.some(m =>
-            (m.type||'').toLowerCase() === 'audio' && (m.ext||'').toLowerCase() === 'm4a'
-          )) return;
+          if (isYouTube) {
+            // YouTube: ambil type=audio saja, prefer m4a skip opus
+            if (!isItemAudio) return;
+            if (itemExt === 'opus' && mediaList.some(m =>
+              (m.type||'').toLowerCase() === 'audio' && (m.ext||'').toLowerCase() === 'm4a'
+            )) return;
+          } else {
+            // Non-YouTube (TikTok, IG, dll): ambil type=audio atau quality=audio
+            const isAudioItem = isItemAudio || itemQuality === 'audio';
+            if (!isAudioItem) return;
+          }
         } else {
-          if (isItemAudio)     return;
-          if (isItemVideoOnly) return;
+          // User minta video
+          if (isItemAudio) return;
           if (itemQuality === 'watermark') return;
+          // YouTube: skip video-only streams (no audioQuality)
+          if (isYouTube && isItemVideo && (audioQ === '' || audioQ == null)) return;
         }
 
         const quality   = item.quality || item.label || (isItemAudio ? 'Audio' : 'Video');
