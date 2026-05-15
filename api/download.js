@@ -1,8 +1,8 @@
 // api/download.js — Vercel Serverless Function (Node.js)
-// Proxy ke All Media Downloader via RapidAPI
+// Proxy ke ZM Social Downloader via RapidAPI
 
-const RAPIDAPI_KEY  = '2ff9169c12msh5bbb61f87b95b8cp10a495jsn57c534267f4a';
-const RAPIDAPI_HOST = 'all-media-downloader1.p.rapidapi.com';
+const RAPIDAPI_KEY  = process.env.RAPIDAPI_KEY || '2ff9169c12msh5bbb61f87b95b8cp10a495jsn57c534267f4a';
+const RAPIDAPI_HOST = 'zm-api.p.rapidapi.com';
 
 module.exports = async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -19,68 +19,91 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const params = new URLSearchParams({
-      url: url.trim(),
-      cookies: '',
-      cookies_file: '',
-    });
+    const apiUrl = `https://${RAPIDAPI_HOST}/v1/social/autolink?url=${encodeURIComponent(url.trim())}`;
 
-    const apiRes = await fetch(`https://${RAPIDAPI_HOST}/all`, {
-      method: 'POST',
+    const apiRes = await fetch(apiUrl, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
+        'Content-Type': 'application/json',
+        'content-type': 'application/json',
         'x-rapidapi-host': RAPIDAPI_HOST,
         'x-rapidapi-key': RAPIDAPI_KEY,
       },
-      body: params.toString(),
       signal: AbortSignal.timeout(25000),
     });
 
     const data = await apiRes.json();
 
-    if (!apiRes.ok || data.error) {
+    if (!apiRes.ok || data.error || data.status === false) {
       res.status(422).json({ error: data.error || data.message || 'Gagal memproses URL' });
       return;
     }
 
-    // Normalkan response ke format frontend kita
+    // Parse response — cek berbagai kemungkinan struktur
     const formats = [];
+    const thumb   = data.thumbnail || data.thumb || data.cover || data.image || null;
+    const title   = data.title || data.filename || data.desc || extractTitle(url.trim());
 
-    // Cek berbagai format response yang mungkin dikembalikan API ini
-    const videos = data.videos || data.formats || data.links || [];
-    const thumb  = data.thumbnail || data.thumb || data.image || null;
-    const title  = data.title || data.filename || extractTitle(url.trim());
+    // Format bisa ada di: data.medias, data.links, data.data, data.videos, atau langsung data.url
+    const mediaList = data.medias || data.links || data.videos || data.data || [];
 
-    if (Array.isArray(videos) && videos.length > 0) {
-      videos.forEach((v, i) => {
-        const dlUrl = v.url || v.link || v.download_url;
+    if (Array.isArray(mediaList) && mediaList.length > 0) {
+      const hasAudioItem = mediaList.some(m =>
+        (m.type || '').toLowerCase() === 'audio' ||
+        (m.ext || '').toLowerCase() === 'm4a' ||
+        (m.ext || '').toLowerCase() === 'opus'
+      );
+
+      mediaList.forEach((item, i) => {
+        const dlUrl = item.url || item.link || item.download_url || item.src;
         if (!dlUrl) return;
-        const quality = v.quality || v.resolution || v.format || (isAudio ? 'Audio' : 'Video');
-        const ext     = v.ext || v.extension || v.format || (isAudio ? 'mp3' : 'mp4');
+
+        const itemType = (item.type || '').toLowerCase();
+        const itemExt  = (item.ext || '').toLowerCase();
+        const isItemAudio = itemType === 'audio' || itemExt === 'm4a' || itemExt === 'opus';
+        const isItemVideo = itemType === 'video';
+
+        // Untuk video: hanya ambil format yang punya audio (audioQuality tidak null)
+        // atau format merged (biasanya formatId 18/22 di YouTube)
+        if (isItemVideo) {
+          const hasAudio = item.audioQuality && item.audioQuality !== null;
+          const isMerged = item.is_audio === true || hasAudio;
+          if (!isMerged) return; // skip video-only streams
+        }
+
+        // Filter sesuai pilihan user
+        if (isAudio && !isItemAudio && hasAudioItem) return;
+        if (!isAudio && isItemAudio) return;
+
+        // zm-api pakai field "label" untuk kualitas
+        const quality = item.label || item.quality || item.resolution || item.type || (isItemAudio ? 'Audio' : 'Video');
+        const ext     = item.ext || item.extension || (isItemAudio ? 'm4a' : 'mp4');
+
         formats.push({
-          format_id: v.format_id || `f${i}`,
+          format_id: item.formatId || item.format_id || `f${i}`,
           extension: ext,
           resolution: quality,
-          filesize: v.filesize || v.size || null,
+          filesize: item.filesize || item.size || item.clen || null,
           url: dlUrl,
-          note: v.note || quality,
+          note: quality,
         });
       });
     } else if (data.url || data.download_url || data.link) {
-      // Single URL response
-      const dlUrl = data.url || data.download_url || data.link;
       formats.push({
         format_id: 'best',
         extension: isAudio ? 'mp3' : 'mp4',
         resolution: isAudio ? 'Audio' : 'Best',
         filesize: null,
-        url: dlUrl,
+        url: data.url || data.download_url || data.link,
         note: 'Best quality',
       });
     }
 
     if (formats.length === 0) {
-      res.status(422).json({ error: 'Tidak ada format yang tersedia untuk URL ini' });
+      // Kembalikan raw data untuk debug
+      res.status(422).json({
+        error: 'Tidak ada format tersedia. Raw: ' + JSON.stringify(data).slice(0, 200)
+      });
       return;
     }
 

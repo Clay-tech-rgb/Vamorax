@@ -195,29 +195,31 @@
     Download
   </button>
 
+  <!-- Loading state -->
   <div class="dl-loading" id="dlLoading">
     <div class="dl-loading-label">
       <span class="dl-spinner"></span>
-      <span id="dlLoadingText">Fetching media info...</span>
+      <span id="dlLoadingText">Fetching video...</span>
+      <button class="dl-cancel-btn" id="dlCancelBtn" style="margin-left:auto">Cancel</button>
     </div>
     <div class="dl-progress-track"><div class="dl-progress-bar" id="dlProgressBar"></div></div>
-    <button class="dl-cancel-btn" id="dlCancelBtn">Cancel</button>
   </div>
 
+  <!-- Results -->
   <div class="dl-results" id="dlResults">
     <div class="dl-result-card">
-      <div class="dl-result-thumb">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+      <div class="dl-result-thumb" id="dlResultThumb">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
       </div>
       <div class="dl-result-info">
-        <div class="dl-result-title" id="dlResultTitle">Media detected</div>
+        <div class="dl-result-title" id="dlResultTitle">—</div>
         <div class="dl-result-meta">
-          <span class="dl-platform-badge" id="dlResultPlatform">Platform</span>
-          <span class="dl-duration">3:42</span>
+          <span class="dl-platform-badge" id="dlResultPlatform">—</span>
+          <span class="dl-duration" id="dlResultDuration"></span>
         </div>
       </div>
     </div>
-    <div class="dl-options-title">Choose quality</div>
+    <div class="dl-options-title">Available Formats</div>
     <div class="dl-options-list" id="dlOptionsList"></div>
   </div>
 
@@ -292,71 +294,72 @@
 </div>
 <script>
 (function(){
-  var VIDEO_Q = ['1080p','720p','480p','360p'];
-  var AUDIO_Q = ['320kbps','192kbps','128kbps'];
-  var currentFmt = 'video';
-
-  function renderChips(arr){
-    var row = document.getElementById('dlQualityRow');
-    row.innerHTML = arr.map(function(q,i){
-      return '<button class="dl-chip'+(i===0?' active':'')+'" data-q="'+q+'">'+q+'</button>';
-    }).join('');
-    row.querySelectorAll('.dl-chip').forEach(function(btn){
-      btn.addEventListener('click',function(){
-        row.querySelectorAll('.dl-chip').forEach(function(b){b.classList.remove('active');});
-        btn.classList.add('active');
-      });
-    });
-  }
-
-
-  renderChips(VIDEO_Q);
-
-  document.getElementById('fmtVideo').addEventListener('click',function(){
-    document.getElementById('fmtVideo').classList.add('active');
-    document.getElementById('fmtAudio').classList.remove('active');
-    currentFmt = 'video';
-    renderChips(VIDEO_Q);
-  });
-  document.getElementById('fmtAudio').addEventListener('click',function(){
-    document.getElementById('fmtAudio').classList.add('active');
-    document.getElementById('fmtVideo').classList.remove('active');
-    currentFmt = 'audio';
-    renderChips(AUDIO_Q);
-  });
-
-  document.getElementById('dlPasteBtn').addEventListener('click',function(){
-    if(navigator.clipboard && navigator.clipboard.readText){
-      navigator.clipboard.readText().then(function(t){
-        document.getElementById('dlInput').value = t;
-      }).catch(function(){
-        document.getElementById('dlInput').focus();
-      });
-    } else {
-      document.getElementById('dlInput').focus();
-    }
-  });
-
   var abortCtrl = null;
 
-  document.getElementById('dlBtn').addEventListener('click', function(){
-    var url = document.getElementById('dlInput').value.trim();
-    if(!url){ document.getElementById('dlInput').focus(); return; }
+  // Paste button
+  document.getElementById('dlPasteBtn').addEventListener('click', function(){
+    if(navigator.clipboard && navigator.clipboard.readText){
+      navigator.clipboard.readText().then(function(t){
+        document.getElementById('dlInput').value = t.trim();
+      }).catch(function(){ document.getElementById('dlInput').focus(); });
+    } else { document.getElementById('dlInput').focus(); }
+  });
 
-    var loading = document.getElementById('dlLoading');
-    var results = document.getElementById('dlResults');
-    var bar     = document.getElementById('dlProgressBar');
-    var txt     = document.getElementById('dlLoadingText');
+  // Format toggle
+  document.getElementById('fmtVideo').addEventListener('click', function(){
+    document.getElementById('fmtVideo').classList.add('active');
+    document.getElementById('fmtAudio').classList.remove('active');
+  });
+  document.getElementById('fmtAudio').addEventListener('click', function(){
+    document.getElementById('fmtAudio').classList.add('active');
+    document.getElementById('fmtVideo').classList.remove('active');
+  });
 
+  // Enter key trigger
+  document.getElementById('dlInput').addEventListener('keydown', function(e){
+    if(e.key === 'Enter') document.getElementById('dlBtn').click();
+  });
+
+  function getPlatformName(url) {
+    if(url.includes('youtube.com') || url.includes('youtu.be')) return 'YouTube';
+    if(url.includes('tiktok.com')) return 'TikTok';
+    if(url.includes('instagram.com')) return 'Instagram';
+    if(url.includes('twitter.com') || url.includes('x.com')) return 'Twitter / X';
+    if(url.includes('facebook.com') || url.includes('fb.watch')) return 'Facebook';
+    return 'Unknown';
+  }
+
+  function formatSize(bytes) {
+    if(!bytes) return '';
+    if(bytes > 1048576) return (bytes/1048576).toFixed(1) + ' MB';
+    if(bytes > 1024) return (bytes/1024).toFixed(0) + ' KB';
+    return bytes + ' B';
+  }
+
+  function formatDuration(sec) {
+    if(!sec) return '';
+    var m = Math.floor(sec/60), s = sec%60;
+    return m + ':' + (s<10?'0':'') + s;
+  }
+
+  function doDownload(url, isAudio) {
+    var loading  = document.getElementById('dlLoading');
+    var results  = document.getElementById('dlResults');
+    var bar      = document.getElementById('dlProgressBar');
+    var txt      = document.getElementById('dlLoadingText');
+    var dlBtn    = document.getElementById('dlBtn');
+
+    // Reset UI
     results.classList.remove('show');
     loading.classList.add('show');
     bar.style.width = '0';
-    txt.textContent = 'Fetching media info...';
+    txt.textContent = isAudio ? 'Fetching audio...' : 'Fetching video...';
+    dlBtn.disabled = true;
 
-    // Animasi progress palsu supaya terasa responsif
+    // Fake progress animation
     var fakePct = 0;
     var fakeTimer = setInterval(function(){
-      if(fakePct < 85){ fakePct += Math.random() * 8; bar.style.width = Math.min(fakePct,85)+'%'; }
+      if(fakePct < 80){ fakePct += Math.random() * 12; bar.style.width = Math.min(fakePct, 80) + '%'; }
     }, 400);
 
     abortCtrl = new AbortController();
@@ -364,77 +367,100 @@
     fetch('/api/download', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url: url }),
+      body: JSON.stringify({ url: url, isAudio: isAudio }),
       signal: abortCtrl.signal
     })
     .then(function(res){ return res.json(); })
     .then(function(data){
       clearInterval(fakeTimer);
       bar.style.width = '100%';
-      loading.classList.remove('show');
+      setTimeout(function(){ loading.classList.remove('show'); }, 300);
+      dlBtn.disabled = false;
 
       if(data.error){
         alert('Error: ' + data.error);
         return;
       }
 
-      // Deteksi platform dari URL
-      var platform = url.includes('youtube') || url.includes('youtu.be') ? 'YouTube'
-        : url.includes('tiktok') ? 'TikTok'
-        : url.includes('instagram') ? 'Instagram'
-        : url.includes('twitter') || url.includes('x.com') ? 'Twitter / X'
-        : url.includes('facebook') ? 'Facebook' : 'Unknown';
+      var platform = getPlatformName(url);
+
+      // Thumbnail
+      var thumb = document.getElementById('dlResultThumb');
+      if(data.thumbnail){
+        thumb.innerHTML = '<img src="'+data.thumbnail+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" onerror="this.parentElement.innerHTML=\'<svg width=20 height=20 viewBox=\\\"0 0 24 24\\\" fill=none stroke=currentColor stroke-width=1.5><polygon points=\\\"23 7 16 12 23 17 23 7\\\"/><rect x=1 y=5 width=15 height=14 rx=2/></svg>\'" />';
+      }
 
       document.getElementById('dlResultTitle').textContent = data.title || ('Media from ' + platform);
       document.getElementById('dlResultPlatform').textContent = platform;
 
-      // Tampilkan thumbnail jika ada
-      var thumb = document.querySelector('.dl-result-thumb');
-      if(data.thumbnail){
-        thumb.innerHTML = '<img src="'+data.thumbnail+'" style="width:100%;height:100%;object-fit:cover;border-radius:inherit" />';
-      }
+      var durEl = document.getElementById('dlResultDuration');
+      durEl.textContent = data.duration ? formatDuration(data.duration) : '';
 
-      // Filter format sesuai pilihan user (video / audio)
-      var filtered = (data.formats || []).filter(function(f){
-        if(currentFmt === 'audio') return f.resolution === 'Audio';
-        return f.resolution !== 'Audio';
-      });
-
-      if(!filtered.length){
-        // Fallback: tampilkan semua jika filter kosong
-        filtered = data.formats || [];
-      }
-
-      // Render opsi download nyata
+      // Render format options
       var list = document.getElementById('dlOptionsList');
-      list.innerHTML = filtered.map(function(f){
-        var size = f.filesize ? (f.filesize / 1048576).toFixed(1) + ' MB' : 'Unknown size';
-        var label = f.resolution + (f.extension ? ' · ' + f.extension.toUpperCase() : '');
-        // Gunakan tag <a download> agar browser langsung download, bukan buka tab baru
-        return '<div class="dl-option-row">'
-          + '<div class="dl-option-left">'
-          + '<span class="dl-option-quality">'+label+'</span>'
-          + '<span class="dl-option-size">'+size+'</span>'
-          + '</div>'
-          + '<a class="dl-option-btn" href="'+f.url+'" download target="_blank" rel="noopener">Download</a>'
-          + '</div>';
-      }).join('');
+      var formats = data.formats || [];
+
+      if(formats.length === 0){
+        list.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:12px 0">No formats available. Try a different URL.</p>';
+      } else {
+        list.innerHTML = formats.map(function(f, i){
+          var label = isAudio ? 'Download MP3' : 'Download MP4';
+          var quality = f.resolution || f.note || (isAudio ? 'Audio' : 'Video');
+          var ext = (f.extension || (isAudio ? 'mp3' : 'mp4')).toUpperCase();
+          var size = formatSize(f.filesize);
+          return '<div class="dl-option-row">'
+            + '<div class="dl-option-left">'
+            + '<span class="dl-option-quality">' + ext + '</span>'
+            + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
+            + '</div>'
+            + '<a class="dl-option-btn" href="' + f.url + '" download="media.' + (f.extension || (isAudio?'mp3':'mp4')) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>'
+            + '</div>';
+        }).join('');
+      }
 
       results.classList.add('show');
+
+      // Save to recent (localStorage)
+      try {
+        var recent = JSON.parse(localStorage.getItem('dlRecent') || '[]');
+        recent.unshift({
+          title: data.title || ('Media from ' + platform),
+          platform: platform,
+          quality: formats[0] ? (formats[0].resolution || 'Best') : 'Best',
+          url: url,
+          ts: Date.now()
+        });
+        recent = recent.slice(0, 10);
+        localStorage.setItem('dlRecent', JSON.stringify(recent));
+      } catch(e){}
     })
     .catch(function(err){
       clearInterval(fakeTimer);
       loading.classList.remove('show');
-      if(err.name !== 'AbortError'){
-        alert('Gagal menghubungi server. Coba lagi.');
-      }
+      dlBtn.disabled = false;
+      if(err.name !== 'AbortError') alert('Failed to connect to server. Please try again.');
     });
+  }
+
+  document.getElementById('dlBtn').addEventListener('click', function(){
+    var url = document.getElementById('dlInput').value.trim();
+    if(!url){ document.getElementById('dlInput').focus(); return; }
+
+    // Basic URL validation
+    try { new URL(url); } catch(e) {
+      alert('Please enter a valid URL.');
+      return;
+    }
+
+    var isAudio = document.getElementById('fmtAudio').classList.contains('active');
+    doDownload(url, isAudio);
   });
 
   document.getElementById('dlCancelBtn').addEventListener('click', function(){
     if(abortCtrl) abortCtrl.abort();
     document.getElementById('dlLoading').classList.remove('show');
     document.getElementById('dlProgressBar').style.width = '0';
+    document.getElementById('dlBtn').disabled = false;
   });
 })();
 </script>
