@@ -404,16 +404,19 @@
         list.innerHTML = '<p style="font-size:13px;color:var(--text-3);padding:12px 0">No formats available. Try a different URL.</p>';
       } else {
         list.innerHTML = formats.map(function(f, i){
-          var label = isAudio ? 'Download MP3' : 'Download MP4';
+          var label = isAudio ? 'Download ' + (f.extension || 'm4a').toUpperCase() : 'Download ' + (f.extension || 'mp4').toUpperCase();
           var quality = f.resolution || f.note || (isAudio ? 'Audio' : 'Video');
-          var ext = (f.extension || (isAudio ? 'mp3' : 'mp4')).toUpperCase();
+          var ext = (f.extension || (isAudio ? 'm4a' : 'mp4')).toUpperCase();
           var size = formatSize(f.filesize);
+          // Encode both proxy url and direct url
+          var proxyEnc  = encodeURIComponent(f.url);
+          var directEnc = encodeURIComponent(f.direct_url || f.url);
           return '<div class="dl-option-row">'
             + '<div class="dl-option-left">'
             + '<span class="dl-option-quality">' + ext + '</span>'
             + '<span class="dl-option-size">' + quality + (size ? ' · ' + size : '') + '</span>'
             + '</div>'
-            + '<a class="dl-option-btn" href="' + f.url + '" download="media.' + (f.extension || (isAudio?'mp3':'mp4')) + '" target="_blank" rel="noopener noreferrer">' + label + '</a>'
+            + '<button class="dl-option-btn" onclick="triggerDownload(\'' + proxyEnc + '\',\'' + directEnc + '\')">' + label + '</button>'
             + '</div>';
         }).join('');
       }
@@ -462,6 +465,22 @@
     document.getElementById('dlProgressBar').style.width = '0';
     document.getElementById('dlBtn').disabled = false;
   });
+
+  // Trigger download via proxy (bypass CORS), fallback ke direct URL
+  window.triggerDownload = function(proxyEnc, directEnc) {
+    var proxyUrl  = decodeURIComponent(proxyEnc);
+    var directUrl = directEnc ? decodeURIComponent(directEnc) : proxyUrl;
+
+    // Coba proxy dulu (supaya nama file benar & force download)
+    // Kalau proxy gagal (misal file terlalu besar / timeout), fallback ke direct
+    var a = document.createElement('a');
+    a.href = proxyUrl;
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
 })();
 </script>
 <script type="module">
