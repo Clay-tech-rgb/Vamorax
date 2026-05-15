@@ -2075,6 +2075,18 @@ body.page-leaving .page-content {
 }
 .vmx-signin-btn:hover { opacity: 0.85; }
 
+/* ── Sign Out button ── */
+.vmx-signout-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 7px 14px; border-radius: var(--radius);
+  font-size: 13px; font-weight: 600; font-family: var(--font);
+  background: transparent; color: var(--text-2);
+  border: 1px solid var(--border);
+  cursor: pointer; white-space: nowrap;
+  transition: background var(--transition), color var(--transition), border-color var(--transition);
+}
+.vmx-signout-btn:hover { background: var(--bg-3); color: var(--text); border-color: var(--border-strong); }
+
 /* ── Hamburger ── */
 .vmx-hamburger {
   display: none; flex-direction: column; justify-content: center;

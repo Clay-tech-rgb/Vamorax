@@ -133,7 +133,7 @@
 
 <script type="module">
   import { initTheme, toggleTheme, startProgress, doneProgress, showToast } from './js/ui.js';
-  import { initDashboard } from './js/auth.js';
+  import { initDashboard, updateNavAuth } from './js/auth.js';
   import { fetchPresets, renderPresetCard } from './js/shop.js';
   import { auth, db, doc, getDoc, onAuthStateChanged } from './js/firebase-config.js';
   import { initPageTransition } from './js/transition.js';
@@ -142,7 +142,7 @@
   window.toggleTheme = toggleTheme;
   initPageTransition();
   initWaveBackground();
-  startProgress(); initTheme(); initDashboard(); initNavPill();
+  startProgress(); initTheme(); initDashboard(); initNavPill(); updateNavAuth();
   doneProgress();
 
   document.querySelectorAll('.dashboard-nav-item, .dashboard-bottom-nav-item').forEach(item => {

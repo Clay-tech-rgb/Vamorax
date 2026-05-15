@@ -192,10 +192,11 @@ export function initNavPill() {
 
       <!-- Sign in / User -->
       <a href="login.html" class="vmx-signin-btn nav-login-btn">Sign in</a>
-      <div class="nav-user-menu hidden">
-        <a href="dashboard.html" class="vmx-icon-btn" title="Dashboard" aria-label="Dashboard">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-        </a>
+      <div class="nav-user-menu hidden" style="display:flex;align-items:center;gap:6px">
+        <button class="vmx-signout-btn" id="vmxSignOutBtn" title="Sign out" aria-label="Sign out">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
       </div>
 
       <!-- Hamburger (mobile) -->
@@ -277,8 +278,12 @@ export function initNavPill() {
       </nav>
       <div class="vmx-drawer-footer">
         <a href="login.html" class="vmx-signin-btn nav-login-btn" style="width:100%;justify-content:center">Sign in</a>
-        <div class="nav-user-menu hidden" style="width:100%">
+        <div class="nav-user-menu hidden" style="width:100%;display:flex;flex-direction:column;gap:8px">
           <a href="dashboard.html" class="vmx-signin-btn" style="width:100%;justify-content:center">My Account</a>
+          <button id="vmxSignOutBtnMobile" class="vmx-signout-btn" style="width:100%;justify-content:center">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+            Sign out
+          </button>
         </div>
       </div>
     </div>
@@ -424,6 +429,12 @@ export function initNavPill() {
   themeBtn?.addEventListener('click', () => {
     if (window.toggleTheme) window.toggleTheme();
     setTimeout(syncThemeIcon, 50);
+  });
+
+  // ── Sign Out buttons ──
+  import('./auth.js').then(({ logout }) => {
+    document.getElementById('vmxSignOutBtn')?.addEventListener('click', logout);
+    document.getElementById('vmxSignOutBtnMobile')?.addEventListener('click', logout);
   });
 
   // Observe theme changes

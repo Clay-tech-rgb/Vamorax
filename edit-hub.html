@@ -1982,24 +1982,29 @@ document.addEventListener('click', e => {
    TOOL 6  IMAGE CONVERTER
    ============================================================ */
 (function() {
-  const drop    = document.getElementById('conv-drop');
-  const input   = document.getElementById('conv-input');
-  const list    = document.getElementById('conv-list');
-  const actions = document.getElementById('conv-actions');
-  const allBtn  = document.getElementById('conv-all-btn');
-  const clearBtn = document.getElementById('conv-clear-btn');
+  const drop       = document.getElementById('conv-drop');
+  const input      = document.getElementById('conv-input');
+  const list       = document.getElementById('conv-list');
+  const actions    = document.getElementById('conv-actions');
+  const allBtn     = document.getElementById('conv-all-btn');
+  const clearBtn   = document.getElementById('conv-clear-btn');
   const qualSlider = document.getElementById('conv-quality');
   const qualVal    = document.getElementById('conv-quality-val');
 
-  let currentFmt = 'png';
-  let items = []; // { file, objectUrl, canvas, name }
+  if (!drop || !input || !qualSlider) return; // guard
 
-  // Format buttons — scoped to conv-format-btns container
+  let currentFmt = 'png';
+  let items = [];
+
+  // Format buttons
   document.querySelectorAll('#conv-format-btns .conv-fmt').forEach(btn => {
     btn.addEventListener('click', () => {
       document.querySelectorAll('#conv-format-btns .conv-fmt').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       currentFmt = btn.dataset.fmt;
+      // Show/hide quality slider — PNG is lossless, quality has no effect
+      const qualWrap = qualSlider.closest('div');
+      if (qualWrap) qualWrap.style.opacity = currentFmt === 'png' || currentFmt === 'bmp' ? '0.4' : '1';
       renderList();
     });
   });
@@ -2025,13 +2030,14 @@ document.addEventListener('click', e => {
       const img = new Image();
       img.onload = () => {
         const canvas = document.createElement('canvas');
-        canvas.width = img.naturalWidth;
+        canvas.width  = img.naturalWidth;
         canvas.height = img.naturalHeight;
         canvas.getContext('2d').drawImage(img, 0, 0);
         const baseName = file.name.replace(/\.[^.]+$/, '');
         items.push({ file, objectUrl: url, canvas, name: baseName, thumb: url });
         renderList();
       };
+      img.onerror = () => showHubToast('Could not load image: ' + file.name, 'error');
       img.src = url;
     });
   }
@@ -2043,41 +2049,79 @@ document.addEventListener('click', e => {
     actions.style.display = 'flex';
     list.innerHTML = items.map((item, i) => {
       const ext = getExt(currentFmt);
-      const size = (item.file.size / 1024).toFixed(0);
+      const origKB = (item.file.size / 1024).toFixed(0);
       return `<div class="conv-item" id="conv-item-${i}">
         <img class="conv-thumb" src="${item.thumb}" alt="" />
         <div class="conv-info">
           <div class="conv-name">${item.name}.${ext}</div>
-          <div class="conv-meta">${item.canvas.width} × ${item.canvas.height}px &nbsp;·&nbsp; orig ${size} KB</div>
+          <div class="conv-meta">${item.canvas.width}×${item.canvas.height}px · orig ${origKB} KB</div>
         </div>
-        <button class="conv-dl-btn ready" onclick="convDownload(${i})">
+        <button class="conv-dl-btn ready" id="conv-dl-${i}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
           Save
         </button>
       </div>`;
     }).join('');
+    items.forEach((_, i) => {
+      document.getElementById('conv-dl-' + i)?.addEventListener('click', () => convDownloadItem(i));
+    });
   }
 
-  window.convDownload = function(i) {
+  function convDownloadItem(i) {
     const item = items[i];
     if (!item) return;
-    const quality = parseInt(qualSlider.value) / 100;
-    const mimeType = 'image/' + currentFmt;
-    const ext = getExt(currentFmt);
-    item.canvas.toBlob(blob => {
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = item.name + '.' + ext;
-      a.click();
-      setTimeout(() => URL.revokeObjectURL(url), 1000);
-    }, mimeType, quality);
-  };
+    const quality  = parseInt(qualSlider.value) / 100;
+    const ext      = getExt(currentFmt);
+    const btn      = document.getElementById('conv-dl-' + i);
+    let mimeType   = currentFmt === 'bmp' ? 'image/png' : 'image/' + currentFmt;
+    let useQuality = (currentFmt === 'jpeg' || currentFmt === 'webp') ? quality : undefined;
 
-  allBtn.addEventListener('click', () => {
-    items.forEach((_, i) => window.convDownload(i));
+    if (btn) { btn.textContent = '…'; btn.disabled = true; }
+
+    const dataUrl = item.canvas.toDataURL(mimeType, useQuality);
+
+    // Convert dataURL to Blob
+    const byteStr = atob(dataUrl.split(',')[1]);
+    const ab = new ArrayBuffer(byteStr.length);
+    const ia = new Uint8Array(ab);
+    for (let j = 0; j < byteStr.length; j++) ia[j] = byteStr.charCodeAt(j);
+    const blob = new Blob([ab], { type: mimeType });
+
+    // showSaveFilePicker (Chrome 86+) — native save dialog
+    if (window.showSaveFilePicker) {
+      window.showSaveFilePicker({
+        suggestedName: item.name + '.' + ext,
+        types: [{ description: 'Image', accept: { [mimeType]: ['.' + ext] } }]
+      }).then(handle => handle.createWritable()).then(writable => {
+        writable.write(blob);
+        return writable.close();
+      }).then(() => {
+        if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1500); }
+      }).catch(err => {
+        if (err.name !== 'AbortError') showHubToast('Save failed: ' + err.message, 'error');
+        if (btn) { btn.textContent = 'Save'; btn.disabled = false; }
+      });
+    } else {
+      // Fallback: dataURL download
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = item.name + '.' + ext;
+      a.style.display = 'none';
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(() => { URL.revokeObjectURL(a.href); document.body.removeChild(a); }, 1000);
+      if (btn) { btn.textContent = '✓'; setTimeout(() => { btn.textContent = 'Save'; btn.disabled = false; }, 1500); }
+    }
+  }
+
+  // Keep window.convDownload for backward compat
+  window.convDownload = convDownloadItem;
+
+  allBtn?.addEventListener('click', () => {
+    items.forEach((_, i) => convDownloadItem(i));
   });
 
-  clearBtn.addEventListener('click', () => {
+  clearBtn?.addEventListener('click', () => {
     items.forEach(item => URL.revokeObjectURL(item.objectUrl));
     items = [];
     input.value = '';
